@@ -25,7 +25,12 @@ var KEY = 'bdh4you_token';
 function show(html) { document.open(); document.write(html); document.close(); }
 function say(t) { document.getElementById('msg').textContent = t; }
 function busy(on) { document.getElementById('b').disabled = on; if (on) say('Đang mở bảng, chờ vài giây...'); }
-function call(body) {
+function call(body, lan) {
+  // Google thinh thoang tra trang loi thay vi JSON: tu thu lai toi da 2 lan
+  lan = lan || 0;
+  return call1(body).catch(function (e) { if (lan >= 2) throw e; return call(body, lan + 1); });
+}
+function call1(body) {
   // credentials: 'omit' de khong gui cookie Google, tranh loi /u/1/ khi may dang nhap nhieu tai khoan
   return fetch(API, { method: 'POST', body: JSON.stringify(body), credentials: 'omit', redirect: 'follow',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
