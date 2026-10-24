@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="vi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>Bảng HCNS ITALY SPORT</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#f3f5f8;margin:0;display:flex;min-height:100vh;align-items:center;justify-content:center}
+.box{background:#fff;padding:28px 24px;border-radius:14px;box-shadow:0 2px 12px rgba(0,0,0,.08);width:300px}
+h1{font-size:19px;margin:0 0 4px}p{color:#666;font-size:14px;margin:0 0 18px}
+input{width:100%;box-sizing:border-box;padding:12px;font-size:16px;border:1px solid #ccd;border-radius:8px;margin-bottom:12px}
+button{width:100%;padding:12px;font-size:16px;border:0;border-radius:8px;background:#12B24A;color:#fff;cursor:pointer}
+button:disabled{opacity:.6}#msg{color:#c62828;font-size:14px;min-height:20px;margin-top:10px}
+</style></head><body>
+<!-- Trang dang nhap bang HCNS ITALY SPORT (dung chung API + Sheet phan quyen, gui tt:'is-hcns'; quyen is-hcns hoac is-lanhdao). Khong chua so lieu: so lieu chi tra ve sau khi dung ten + PIN. -->
+<form class="box" id="box" autocomplete="on">
+  <h1>ITALY SPORT</h1><p>Đăng nhập để xem bảng hành chính nhân sự</p>
+  <input id="u" name="username" placeholder="Tên đăng nhập" autocapitalize="none" autocomplete="username">
+  <input id="p" name="password" placeholder="Mã PIN" type="password" inputmode="numeric" autocomplete="current-password">
+  <button id="b" type="submit">Xem bảng</button>
+  <div id="msg"></div>
+</form>
+<script>
+var API = 'https://script.google.com/macros/s/AKfycbxVvbAjXnDirwauw3n8Lxtk0ZHzt6c6l6tj40ThchZbjKAOyEn7W2RToA9uTHkZLGle8w/exec';
+var KEY = 'bdh4you_token';
+function show(html) { document.open(); document.write(html); document.close(); }
+function say(t) { document.getElementById('msg').textContent = t; }
+function busy(on) { document.getElementById('b').disabled = on; if (on) say('Đang mở bảng, chờ vài giây...'); }
+function call(body, lan) {
+  // Google thinh thoang tra trang loi thay vi JSON: tu thu lai toi da 2 lan
+  lan = lan || 0;
+  return call1(body).catch(function (e) { if (lan >= 2) throw e; return call(body, lan + 1); });
+}
+function call1(body) {
+  // credentials: 'omit' de khong gui cookie Google, tranh loi /u/1/ khi may dang nhap nhieu tai khoan
+  return fetch(API, { method: 'POST', body: JSON.stringify(body), credentials: 'omit', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
+}
+document.getElementById('box').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var u = document.getElementById('u').value.trim(), p = document.getElementById('p').value.trim();
+  if (!u || !p) return say('Nhập tên đăng nhập và mã PIN.');
+  busy(true);
+  call({ u: u, pin: p, tt: 'is-hcns' }).then(function (r) {
+    if (!r.ok) { busy(false); return say(r.msg || 'Không mở được bảng.'); }
+    try { localStorage.setItem(KEY, r.token); } catch (e) {}
+    show(r.html);
+  }).catch(function () { busy(false); say('Mạng chập chờn, bấm Xem bảng lần nữa.'); });
+});
+var tk = null;
+try {
+  if (/[?&]thoat=1/.test(location.search)) { localStorage.removeItem(KEY); history.replaceState(null, '', location.pathname); }
+  tk = localStorage.getItem(KEY);
+} catch (e) {}
+if (tk) {
+  busy(true);
+  call({ token: tk, tt: 'is-hcns' }).then(function (r) {
+    if (r.ok) return show(r.html);
+    // Tai khoan khong co quyen HCNS (vd sale): giu dang nhap bang chinh, chi bao loi o day
+    if (r.het) { try { localStorage.removeItem(KEY); } catch (e) {} }
+    busy(false); say(r.msg || '');
+  }).catch(function () { busy(false); say(''); });
+}
+</script></body></html>
