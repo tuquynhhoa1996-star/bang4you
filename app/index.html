@@ -1,28 +1,114 @@
 <!doctype html>
 <html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
 <title>Cổng nội bộ YGroup Sport</title>
-<!-- Cong noi bo: 1 link chung cho QLL/HLV/quan ly. Moi nut dan toi app that, app tu dang nhap bang ten + PIN. Khong chua so lieu. -->
+<!-- Cong noi bo (27/10/2026): dang nhap 1 lan bang ten + PIN, chi hien nut nguoi do duoc dung.
+     Script bang dieu hanh (doPost {cong:1}) doi chieu 2 bo tai khoan: bang dieu hanh va app diem danh (tab IS, 4YOU).
+     Bang dieu hanh mo thang (token bdh4you_token cung ten mien); app diem danh nhan phien qua link /exec#tk=.
+     Cong chi an/hien nut, tung bang/app van tu kiem quyen moi lan mo. Khong chua so lieu. -->
 <style>
 body{font-family:system-ui,sans-serif;background:#f3f5f4;margin:0;color:#1f2a24}
-header{background:#123524;color:#fff;padding:14px 18px;font-weight:700;font-size:16px}
+header{background:#123524;color:#fff;padding:12px 16px;display:flex;align-items:center;gap:10px}
+header b{font-size:16px;flex:1}
+header .ten{font-size:12px;opacity:.85;text-align:right}
+header a{color:#9fe0b8;font-size:12px}
 main{max-width:460px;margin:0 auto;padding:16px}
 .the{background:#fff;border:1px solid #dfe5e1;border-radius:10px;padding:14px;margin-bottom:14px}
 h2{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:#5b6b62;margin:0 0 10px}
 a.nut{display:block;text-decoration:none;text-align:center;padding:12px;border-radius:8px;margin-bottom:8px;font-size:15px;font-weight:600}
 a.chinh{background:#1f9d55;color:#fff}
 a.phu{background:#fff;color:#1f2a24;border:1px solid #cfd8d3}
-p.ghi{font-size:12px;color:#6b7a71;margin:4px 0 0}
+label{display:block;font-size:13px;color:#5b6b62;margin:10px 0 4px}
+input{width:100%;box-sizing:border-box;padding:11px;border:1px solid #cfd8d3;border-radius:8px;font-size:16px}
+button{width:100%;margin-top:14px;padding:12px;border:0;border-radius:8px;background:#1f9d55;color:#fff;font-size:15px;font-weight:600}
+button:disabled{opacity:.6}
+p.ghi{font-size:12px;color:#6b7a71;margin:6px 0 0}
+#msg{min-height:18px;font-size:13px;color:#b42318;margin-top:10px}
+.an{display:none}
 </style></head><body>
-<header>Cổng nội bộ YGroup Sport</header>
+<header><b>Cổng nội bộ YGroup Sport</b><div class="ten an" id="nguoi"><span id="tenNg"></span><br><a href="#" id="thoat">Đăng xuất</a></div></header>
 <main>
-<div class="the"><h2>4YOU SPORT (bóng đá)</h2>
-<a class="nut chinh" href="../diemdanh-4y/">Điểm danh ca</a>
-<a class="nut phu" href="../lich-4y/">Lịch của tôi</a></div>
-<div class="the"><h2>ITALY SPORT (bóng rổ)</h2>
-<a class="nut chinh" href="../diemdanh-is/">Điểm danh ca</a>
-<a class="nut phu" href="../lich-is/">Lịch của tôi</a></div>
-<div class="the"><h2>Bảng điều hành (lãnh đạo, sale, HCNS)</h2>
-<a class="nut phu" href="../">Bảng 4YOU SPORT</a>
-<a class="nut phu" href="../italy/">Bảng ITALY SPORT</a>
-<p class="ghi">Mỗi trang đăng nhập bằng tên đăng nhập và mã PIN của mình.</p></div>
-</main></body></html>
+<form class="the" id="box">
+  <h2>Đăng nhập</h2>
+  <label for="u">Tên đăng nhập</label><input id="u" autocomplete="username" autocapitalize="none" placeholder="vd yg240">
+  <label for="p">Mã PIN</label><input id="p" type="password" inputmode="numeric" autocomplete="current-password">
+  <button id="b">Vào cổng</button>
+  <div id="msg"></div>
+  <p class="ghi">Dùng tên đăng nhập và mã PIN được cấp. Máy sẽ nhớ đăng nhập 30 ngày.</p>
+</form>
+<div id="nut"></div>
+</main>
+<script>
+var API = 'https://script.google.com/macros/s/AKfycbxVvbAjXnDirwauw3n8Lxtk0ZHzt6c6l6tj40ThchZbjKAOyEn7W2RToA9uTHkZLGle8w/exec';
+var APP = {
+  IS: { ten: 'ITALY SPORT (bóng rổ)', exec: 'https://script.google.com/macros/s/AKfycbyb64_VRcWGrbqHN7wYlB_N8vJOdom6qzvXUZKvf3bBlgJkDe2xO9THfWkDHVugj2It/exec' },
+  '4Y': { ten: '4YOU SPORT (bóng đá)', exec: 'https://script.google.com/macros/s/AKfycbxlMbwQEIfCg4LpZ6K3fWu4aJHwsbR4e7Y4gl00WlIDvhwbTwlSqZ1sQcEB74GP2sZS/exec' }
+};
+// Quyen bang dieu hanh -> nut (duong dan tren cung ten mien)
+var BANG = {
+  '4Y': [['lanhdao', '../', 'Tổng quan 4YOU'], ['lanhdao,sale', '../kd/', 'Bảng Kinh doanh 4YOU'], ['lanhdao,hcns', '../hcns/', 'Bảng HCNS 4YOU']],
+  IS: [['is-lanhdao', '../italy/', 'Tổng quan ITALY'], ['is-lanhdao,is-sale', '../italy/kd/', 'Bảng Kinh doanh ITALY'], ['is-lanhdao,is-hcns', '../italy/hcns/', 'Bảng HCNS ITALY']]
+};
+var K = 'cong_tk', KB = 'bdh4you_token';
+function $(i) { return document.getElementById(i); }
+function say(t) { $('msg').textContent = t; }
+function e(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function ls(k, v) { try { if (v === undefined) return localStorage.getItem(k); if (v === null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (x) {} return null; }
+function post(url, body, lan) {
+  lan = lan || 0;
+  // credentials: 'omit' de khong gui cookie Google (tranh loi /u/1/ khi may dang nhap nhieu tai khoan Google)
+  return fetch(url, { method: 'POST', body: JSON.stringify(body), credentials: 'omit', redirect: 'follow',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); })
+    .catch(function (x) { if (lan >= 2) throw x; return post(url, body, lan + 1); });
+}
+function thoat() {
+  ls(K, null); ls(KB, null); ls('cong_app_IS', null); ls('cong_app_4Y', null);
+  $('nut').innerHTML = ''; $('nguoi').classList.add('an'); $('box').classList.remove('an'); say('');
+}
+function nut(href, chu, chinh) { return '<a class="nut ' + (chinh ? 'chinh' : 'phu') + '" href="' + e(href) + '">' + e(chu) + '</a>'; }
+function ve(kq) {
+  if (kq.bdh) ls(KB, kq.bdh);
+  $('box').classList.add('an'); $('nguoi').classList.remove('an');
+  $('tenNg').textContent = kq.ten || kq.u;
+  var html = '';
+  ['4Y', 'IS'].forEach(function (n) {
+    var h = '', a = kq.app[n];
+    if (a) {
+      var tk = ls('cong_app_' + n), hash = tk ? '#tk=' + encodeURIComponent(tk) : '';
+      h += nut(APP[n].exec + hash, a.diemDanh ? 'Điểm danh ca' : 'Check-in buổi dạy', true);
+      h += nut(APP[n].exec + '?trang=lich' + hash, 'Lịch của tôi');
+    }
+    BANG[n].forEach(function (x) {
+      if (x[0].split(',').some(function (q) { return kq.bang.indexOf(q) >= 0; })) h += nut(x[1], x[2]);
+    });
+    if (h) html += '<div class="the"><h2>' + APP[n].ten + '</h2>' + h + '</div>';
+  });
+  $('nut').innerHTML = html || '<div class="the"><p class="ghi">Tài khoản này chưa được cấp quyền dùng mục nào. Liên hệ quản lý.</p></div>';
+}
+$('thoat').addEventListener('click', function (ev) { ev.preventDefault(); thoat(); });
+$('box').addEventListener('submit', function (ev) {
+  ev.preventDefault();
+  var u = $('u').value.trim().toLowerCase(), p = $('p').value.trim();
+  if (!u || !p) return say('Nhập tên đăng nhập và mã PIN.');
+  $('b').disabled = true; say('Đang kiểm tra...');
+  post(API, { cong: 1, u: u, pin: p }).then(function (kq) {
+    if (!kq.ok) throw new Error(kq.msg || 'Không đăng nhập được.');
+    ls(K, kq.token);
+    // Lay phien app diem danh cho nhung ben da khop PIN, de bam nut la vao thang
+    return Promise.all(Object.keys(kq.app).map(function (n) {
+      return post(APP[n].exec, { u: u, pin: p }).then(function (r) { if (r.ok) ls('cong_app_' + n, r.token); }).catch(function () {});
+    })).then(function () { $('p').value = ''; ve(kq); });
+  }).catch(function (x) { say(x && x.message && !/fetch|JSON/i.test(x.message) ? x.message : 'Mạng chập chờn, bấm Vào cổng lần nữa.'); })
+    .then(function () { $('b').disabled = false; });
+});
+(function () {
+  var tk = ls(K);
+  if (!tk) return;
+  $('box').classList.add('an'); $('nut').innerHTML = '<div class="the"><p class="ghi">Đang mở cổng...</p></div>';
+  post(API, { cong: 1, token: tk }).then(function (kq) {
+    if (kq.ok) return ve(kq);
+    thoat(); if (!kq.het) say(kq.msg || '');
+  }).catch(function () { $('nut').innerHTML = ''; $('box').classList.remove('an'); say('Mạng chập chờn, đăng nhập lại.'); });
+})();
+</script>
+</body></html>
