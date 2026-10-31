@@ -90,7 +90,7 @@ function ve(kq) {
     }
   });
   if (kq.bang.indexOf('lanhdao') >= 0 || kq.bang.indexOf('is-lanhdao') >= 0)
-    html += '<div class="the"><h2>Quản trị tài khoản (chỉ lãnh đạo)</h2>' + nut('https://docs.google.com/spreadsheets/d/1malCD0rq0purRNzbWkjIRtMTAAYP94_qQeIH4lV8xI8/edit', 'Sheet PIN app điểm danh') + '</div>';
+    html += '<div class="the"><h2>Quản trị tài khoản (chỉ lãnh đạo)</h2>' + nut('https://docs.google.com/spreadsheets/d/1malCD0rq0purRNzbWkjIRtMTAAYP94_qQeIH4lV8xI8/edit', 'File phân quyền chung') + '</div>';
   $('nut').innerHTML = html || '<div class="the"><p class="ghi">Tài khoản này chưa được cấp quyền dùng mục nào. Liên hệ quản lý.</p></div>';
 }
 $('thoat').addEventListener('click', function (ev) { ev.preventDefault(); thoat(); });
