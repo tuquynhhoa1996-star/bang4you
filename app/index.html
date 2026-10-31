@@ -41,8 +41,8 @@ p.ghi{font-size:12px;color:#6b7a71;margin:6px 0 0}
 <script>
 var API = 'https://script.google.com/macros/s/AKfycbxVvbAjXnDirwauw3n8Lxtk0ZHzt6c6l6tj40ThchZbjKAOyEn7W2RToA9uTHkZLGle8w/exec';
 var APP = {
-  IS: { ten: 'ITALY SPORT (bóng rổ)', exec: 'https://script.google.com/macros/s/AKfycbyb64_VRcWGrbqHN7wYlB_N8vJOdom6qzvXUZKvf3bBlgJkDe2xO9THfWkDHVugj2It/exec' },
-  '4Y': { ten: '4YOU SPORT (bóng đá)', exec: 'https://script.google.com/macros/s/AKfycbxlMbwQEIfCg4LpZ6K3fWu4aJHwsbR4e7Y4gl00WlIDvhwbTwlSqZ1sQcEB74GP2sZS/exec' }
+  IS: { ten: 'ITALY SPORT (bóng rổ)', dd: '../diemdanh-is/', lich: '../lich-is/', web: 'https://italysport.ygroupsport.com/', hocthu: 'https://hocthu.ygroupsport.com/', exec: 'https://script.google.com/macros/s/AKfycbyb64_VRcWGrbqHN7wYlB_N8vJOdom6qzvXUZKvf3bBlgJkDe2xO9THfWkDHVugj2It/exec' },
+  '4Y': { ten: '4YOU SPORT (bóng đá)', dd: '../diemdanh-4y/', lich: '../lich-4y/', web: 'https://4you.ygroupsport.com/', hocthu: 'https://4yousport.ygroupsport.com/', exec: 'https://script.google.com/macros/s/AKfycbxlMbwQEIfCg4LpZ6K3fWu4aJHwsbR4e7Y4gl00WlIDvhwbTwlSqZ1sQcEB74GP2sZS/exec' }
 };
 // Quyen bang dieu hanh -> nut (duong dan tren cung ten mien)
 var BANG = {
@@ -75,14 +75,22 @@ function ve(kq) {
     var h = '', a = kq.app[n];
     if (a) {
       var tk = ls('cong_app_' + n), hash = tk ? '#tk=' + encodeURIComponent(tk) : '';
-      h += nut(APP[n].exec + hash, a.diemDanh ? 'Điểm danh ca' : 'Check-in buổi dạy', true);
-      h += nut(APP[n].exec + '?trang=lich' + hash, 'Lịch của tôi');
+      // 31/10/2026: mo app qua trang cung ten mien (nhung iframe), khong mo thang script.google.com (loi "Khong the mo tep" khi may co nhieu tai khoan Google)
+      h += nut(APP[n].dd + hash, a.diemDanh ? 'Điểm danh ca' : 'Check-in buổi dạy', true);
+      h += nut(APP[n].lich + hash, 'Lịch của tôi');
     }
     BANG[n].forEach(function (x) {
       if (x[0].split(',').some(function (q) { return kq.bang.indexOf(q) >= 0; })) h += nut(x[1], x[2]);
     });
-    if (h) html += '<div class="the"><h2>' + APP[n].ten + '</h2>' + h + '</div>';
+    // 31/10/2026 chi Hoa: gom moi link ve 1 cho (website, hoc thu, diem nang luc noi bo)
+    if (h) {
+      var w = APP[n].web;
+      h += nut(w, 'Website') + nut(APP[n].hocthu, 'Trang đăng ký học thử') + nut(w + 'diem-nang-luc-noi-bo.html', 'Điểm năng lực (nội bộ)');
+      html += '<div class="the"><h2>' + APP[n].ten + '</h2>' + h + '</div>';
+    }
   });
+  if (kq.bang.indexOf('lanhdao') >= 0 || kq.bang.indexOf('is-lanhdao') >= 0)
+    html += '<div class="the"><h2>Quản trị tài khoản (chỉ lãnh đạo)</h2>' + nut('https://docs.google.com/spreadsheets/d/1malCD0rq0purRNzbWkjIRtMTAAYP94_qQeIH4lV8xI8/edit', 'Sheet PIN app điểm danh') + '</div>';
   $('nut').innerHTML = html || '<div class="the"><p class="ghi">Tài khoản này chưa được cấp quyền dùng mục nào. Liên hệ quản lý.</p></div>';
 }
 $('thoat').addEventListener('click', function (ev) { ev.preventDefault(); thoat(); });
