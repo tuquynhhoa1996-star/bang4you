@@ -1235,21 +1235,34 @@ function moPhieu(p, canh, moi) {
   closeUpd(); var d = document.createElement('div'); d.className = 'sheet'; d.id = 'ov';
   d.innerHTML = '<div><h3 style="margin-top:0">Phiếu thu ' + esc(p.so) + '<em>' + Core.tien(p.soTien) + 'đ</em></h3>' + (canh ? '<div class="err">' + esc(canh) + '</div>' : '') +
     (p.so === 'XEM TRƯỚC' ? '<div class="err">Đang chạy thử chưa ghi Sheet nên phiếu chưa có số. Đừng gửi bản này cho phụ huynh.</div>' : '') +
-    '<div id="pt_img" class="spin">Đang vẽ phiếu...</div><div class="sub">Bấm <b>Gửi qua Zalo</b> rồi chọn Zalo, chọn phụ huynh. Máy không hiện Zalo thì bấm Tải ảnh rồi gửi ảnh trong Zalo.</div>' +
+    '<div id="pt_img" class="spin">Đang vẽ phiếu...</div><div class="sub" id="pt_hd">Bấm <b>Gửi qua Zalo</b> rồi chọn Zalo, chọn phụ huynh.</div>' +
     '<div class="btns"><button class="pri" id="pt_share">Gửi qua Zalo</button><button id="pt_dl">Tải ảnh</button></div>' +
-    '<div class="btns">' + (C_ZALO(p) ? '<a href="' + C_ZALO(p) + '" target="_blank" rel="noopener">Mở Zalo phụ huynh</a>' : '') + '<button id="pt_close">Xong</button></div></div>';
+    '<div class="btns">' + (C_ZALO(p) ? '<button id="pt_zl">Chép ảnh + mở Zalo phụ huynh</button>' : '') + '<button id="pt_close">Xong</button></div></div>';
   document.body.appendChild(d);
   $('#pt_close').onclick = function () { closeUpd(); if (moi) refresh(); else render(); };
   vePhieu(p, function (cv) {
-    var url = cv.toDataURL('image/png'), ten = 'Phieu-thu-' + p.so + '-' + Core.noDau(p.ten).replace(/[^a-z0-9]+/gi, '-') + '.png';
-    $('#pt_img').className = ''; $('#pt_img').innerHTML = '<img src="' + url + '" style="width:100%;border-radius:10px;box-shadow:0 1px 4px #0003;margin:6px 0">';
-    $('#pt_dl').onclick = function () { var a = document.createElement('a'); a.href = url; a.download = ten; document.body.appendChild(a); a.click(); a.remove(); };
-    $('#pt_share').onclick = function () {
-      cv.toBlob(function (bl) {
-        var f = new File([bl], ten, { type: 'image/png' });
-        if (navigator.canShare && navigator.canShare({ files: [f] })) navigator.share({ files: [f], title: 'Phiếu thu ' + p.so }).catch(function () {});
-        else { $('#pt_dl').onclick(); alert('Máy này không gửi thẳng được. Ảnh phiếu đã tải về, mở Zalo và gửi ảnh cho phụ huynh.'); }
-      }, 'image/png');
+    var ten = 'Phieu-thu-' + p.so + '-' + Core.noDau(p.ten).replace(/[^a-z0-9]+/gi, '-') + '.png';
+    var blobP = new Promise(function (ok) { cv.toBlob(ok, 'image/png'); });
+    blobP.then(function (bl) {
+      var url = URL.createObjectURL(bl), f = new File([bl], ten, { type: 'image/png' }), coShare = !!(navigator.canShare && navigator.canShare({ files: [f] }));
+      $('#pt_img').className = ''; $('#pt_img').innerHTML = '<img src="' + url + '" style="width:100%;border-radius:10px;box-shadow:0 1px 4px #0003;margin:6px 0;-webkit-touch-callout:default">';
+      if (!coShare) $('#pt_hd').innerHTML = '<b>Máy/trình duyệt này không gửi thẳng ảnh được</b> (hay gặp khi mở link trong Telegram/Zalo). Cách nhanh: <b>nhấn giữ vào ảnh phiếu ở trên → Lưu vào Ảnh</b> (hoặc Sao chép), rồi gửi trong Zalo. Muốn bấm 1 lần là gửi: mở app bằng <b>Safari/Chrome</b> (bấm ≡ hoặc ⋯ → Mở trong trình duyệt).';
+      $('#pt_dl').onclick = function () {
+        if (coShare) { navigator.share({ files: [f] }).catch(function () {}); return; } // iPhone: bang chia se co "Lưu hình ảnh"
+        var a = document.createElement('a'); a.href = url; a.download = ten; document.body.appendChild(a); a.click(); a.remove();
+        alert('Nếu ảnh không tự lưu: nhấn giữ vào ảnh phiếu → Lưu vào Ảnh.');
+      };
+      $('#pt_share').onclick = function () {
+        if (coShare) navigator.share({ files: [f], title: 'Phiếu thu ' + p.so }).catch(function () {});
+        else alert('Trình duyệt này không gửi thẳng được. Nhấn giữ vào ảnh phiếu → Lưu vào Ảnh (hoặc Sao chép), rồi gửi trong Zalo.');
+      };
+    });
+    if ($('#pt_zl')) $('#pt_zl').onclick = function () { // Zalo khong nhan anh qua link: chep anh vao bo nho tam roi mo khung chat, phu huynh chi can Dan
+      var mo = function (msg) { if (msg) alert(msg); var w = window.open(C_ZALO(p), '_blank'); if (!w) location.href = C_ZALO(p); };
+      try {
+        if (!window.ClipboardItem || !navigator.clipboard || !navigator.clipboard.write) throw 0;
+        navigator.clipboard.write([new ClipboardItem({ 'image/png': blobP })]).then(function () { mo('Đã chép ảnh phiếu. Vào khung chat Zalo, nhấn giữ ô nhập tin → Dán → Gửi.'); }, function () { mo('Không chép được ảnh. Nhấn giữ vào ảnh phiếu → Lưu vào Ảnh, rồi gửi trong Zalo.'); });
+      } catch (e) { mo('Không chép được ảnh. Nhấn giữ vào ảnh phiếu → Lưu vào Ảnh, rồi gửi trong Zalo.'); }
     };
   });
 }
