@@ -20,7 +20,7 @@ h3 em{font-style:normal;background:#0b3d91;color:#fff;border-radius:10px;padding
 .tag{display:inline-block;background:#e8efff;color:#0b3d91;border-radius:6px;padding:1px 7px;font-size:12px;margin-top:3px}
 .tag.red{background:#ffe6e3;color:#a1261b}.tag.grn{background:#e2f6e8;color:#14703a}
 .sub{color:#556;font-size:13px;margin-top:2px}.note{color:#667;font-size:12px;margin-top:4px;white-space:pre-wrap}
-.btns{display:flex;gap:6px;margin-top:8px}
+.btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.btns>*{min-width:28%}
 .btns a,.btns button,.btn{flex:1;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid #cfd6e2;background:#fff;color:#0b3d91;font-weight:600;text-decoration:none;font-size:14px}
 .btn.pri,.btns .pri{background:#0b3d91;color:#fff;border-color:#0b3d91}
 .empty{color:#778;text-align:center;padding:10px;font-size:13px}
@@ -78,11 +78,29 @@ var Core = (function () {
   function noDau(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/\s+/g, ' ').trim(); }
   C.N = N; C.noDau = noDau;
 
-  C.normPhone = function (s) {
-    var d = String(s == null ? '' : s).replace(/\D/g, '');
+  function norm1(d) {
     if (d.indexOf('84') === 0 && d.length === 11) d = '0' + d.slice(2);
     if (d.length === 9 && d.charAt(0) !== '0') d = '0' + d;
     return d;
+  }
+  // 05/11/2026: 1 o co the ghi nhieu so ("0978.. mẹ\n0976.. bố") -> tach tung so, giu nhan bố/mẹ/zalo
+  C.phones = function (s) {
+    var out = [], seen = {};
+    String(s == null ? '' : s).split(/[\n;,\/]+|\s-\s/).forEach(function (seg) {
+      var d = norm1(seg.replace(/\D/g, ''));
+      if (!/^0\d{9}$/.test(d) || seen[d]) return;
+      seen[d] = 1;
+      var t = seg.toLowerCase(), nhan = /zalo/.test(t) ? 'Zalo' : /b[oố]/.test(t) && /(^|\W)b[oố]/.test(t) ? 'bố' : /m[eẹ]|mej/.test(t) ? 'mẹ' : '';
+      out.push({ sdt: d, nhan: nhan });
+    });
+    out.sort(function (a, b) { return (b.nhan === 'Zalo') - (a.nhan === 'Zalo'); });
+    return out;
+  };
+  C.normPhone = function (s) {
+    var d = norm1(String(s == null ? '' : s).replace(/\D/g, ''));
+    if (/^0\d{9}$/.test(d)) return d;
+    var p = C.phones(s);
+    return p.length ? p[0].sdt : d;
   };
   C.phoneOk = function (s) { return /^0\d{9}$/.test(C.normPhone(s)); };
 
@@ -115,6 +133,7 @@ var Core = (function () {
     return h;
   };
   function col(h, name) { var v = h[N(name)]; return v == null ? -1 : v; }
+  function raw(r, i) { return i < 0 || i >= r.length || r[i] == null ? '' : String(r[i]); }  // giu xuong dong (o nhieu SDT)
   function cell(r, i) { return i < 0 || i >= r.length || r[i] == null ? '' : T(r[i]); }
   C.checkHeaders = function (rows, spec) {
     var h = C.header(rows[0]), miss = [];
@@ -139,7 +158,7 @@ var Core = (function () {
     var d = cfg.data, trials = [];
     d.trial.forEach(function (n) { var v = cell(r, col(h, n)); if (v) trials.push(v); });
     return {
-      row: idx + 1, ten: cell(r, col(h, d.name)), sdt: C.normPhone(cell(r, col(h, d.phone))), sdtGoc: cell(r, col(h, d.phone)),
+      row: idx + 1, ten: cell(r, col(h, d.name)), sdt: C.normPhone(raw(r, col(h, d.phone))), sdtGoc: raw(r, col(h, d.phone)),
       coSo: cell(r, col(h, d.base)), sale: cell(r, col(h, d.sale)), note: cell(r, col(h, d.note)),
       lienHe: cell(r, col(h, d.contact)), chot: cell(r, col(h, d.close)), hocThu: cell(r, col(h, d.trialSt)),
       ngayGoi: cell(r, col(h, d.call)), ngayCham: cell(r, col(h, d.care)), ngaySinh: cell(r, col(h, d.dob)),
@@ -214,7 +233,7 @@ var Core = (function () {
         var han = C.parseDate(hanStr, yr); if (!han) continue;
         var left = C.dayNum(han) - tn;
         if (left > R.taiTucTruoc || left < -R.taiTucQuaHan) continue;
-        out.taiTuc.push({ row: j + 1, ten: cell(q, col(hr, rc.name)), sdt: C.normPhone(cell(q, col(hr, rc.phone))), coSo: cell(q, col(hr, rc.base)),
+        out.taiTuc.push({ row: j + 1, ten: cell(q, col(hr, rc.name)), sdt: C.normPhone(raw(q, col(hr, rc.phone))), sdts: C.phones(raw(q, col(hr, rc.phone))), coSo: cell(q, col(hr, rc.base)),
           khoa: cell(q, col(hr, rc.course)), sale: sc, han: C.fmtDate(han), conLai: left, lyDo: left < 0 ? 'Quá hạn ' + (-left) + ' ngày' : left === 0 ? 'Hết hạn hôm nay' : 'Còn ' + left + ' ngày',
           cotHan: cell(q, col(hr, rc.endExt)) ? 'sau gia hạn' : 'gốc (chưa có cột sau gia hạn)', chot: cell(q, col(hr, rc.close)) });
       }
@@ -229,7 +248,7 @@ var Core = (function () {
   };
   function latest(a) { var b = null; a.forEach(function (x) { if (x && (!b || C.dayNum(x) > C.dayNum(b))) b = x; }); return b; }
   function slim(o, ly) {
-    return { row: o.row, ten: o.ten, sdt: o.sdt, coSo: o.coSo, sale: o.sale, ngayHocThu: o.ngayHocThu, hocThu: o.hocThu, chot: o.chot, lienHe: o.lienHe, note: o.note.slice(-160), lyDo: ly, ngaySinh: o.ngaySinh, truong: o.truong, lop: o.lop };
+    return { row: o.row, ten: o.ten, sdt: o.sdt, coSo: o.coSo, sale: o.sale, ngayHocThu: o.ngayHocThu, hocThu: o.hocThu, chot: o.chot, lienHe: o.lienHe, note: o.note.slice(-160), lyDo: ly, sdts: C.phones(o.sdtGoc), ngaySinh: o.ngaySinh, truong: o.truong, lop: o.lop };
   }
 
   // ---------- TIM KHACH ----------
@@ -514,7 +533,11 @@ function boot() {
     .catch(function (e) { $('#app').innerHTML = '<div class="login"><div class="err">' + esc(e.message) + '</div><div class="btns"><button onclick="logout()">Đăng nhập lại</button><button class="pri" onclick="boot()">Thử lại</button></div></div>'; });
 }
 
-function contact(x) { var p = x.sdt; return p ? '<a href="tel:' + p + '">Gọi</a><a href="https://zalo.me/' + p + '" target="_blank" rel="noopener">Zalo</a>' : ''; }
+function contact(x) {
+  var l = x.sdts && x.sdts.length ? x.sdts : (/^0\d{9}$/.test(x.sdt || '') ? [{ sdt: x.sdt, nhan: '' }] : []);
+  if (!l.length) return x.sdt ? '<span class="sub">SĐT sai định dạng: ' + esc(x.sdt) + '</span>' : '';
+  return l.slice(0, 2).map(function (p) { var n = l.length > 1 ? ' ' + (p.nhan || p.sdt.slice(-3)) : ''; return '<a href="tel:' + p.sdt + '">Gọi' + esc(n) + '</a><a href="https://zalo.me/' + p.sdt + '" target="_blank" rel="noopener">Zalo' + esc(n) + '</a>'; }).join('');
+}
 function card(x, kind) {
   var tag = '<span class="tag ' + (kind === 'tt' && x.conLai < 0 ? 'red' : kind === 'hn' ? 'grn' : '') + '">' + esc(x.lyDo) + '</span>';
   var sub = [x.sdt, x.coSo, x.sale ? 'Sale: ' + x.sale : 'Chưa có sale'].filter(Boolean).join(' · ');
