@@ -758,7 +758,7 @@ function demoCall(p) {
         if (p.act === 'me') return ok({ me: st.me, thu: true });
         if (u && u.leader && p.loc) u = { ten: u.ten, saleName: p.loc, leader: false };
         if (p.act === 'homNay') return ok(Core.homNay(b, d.data, d.reten, u, today));
-        if (p.act === 'tuyChon') { var o = Core.options(b, d.misc, d.data); if (!u.leader) o.sale = [u.saleName]; o.tt = DEMO_TT; o.nguoiLap = [{ ten: 'Bùi Thi Lệ Quyên', pb: 'BR' }, { ten: 'Phan Thị Thanh Hiền', pb: 'BR' }, { ten: 'Trần Thị Minh Phương', pb: 'BĐ' }]; return ok(o); }
+        if (p.act === 'tuyChon') { var o = Core.options(b, d.misc, d.data); if (!u.leader) o.sale = [u.saleName]; o.tt = DEMO_TT; o.nguoiLap = [{ ten: 'Bùi Thị Lệ Quyên', pb: 'BR' }, { ten: 'Phan Thị Thanh Hiền', pb: 'BR' }, { ten: 'Trần Thị Minh Phương', pb: 'BĐ' }]; return ok(o); }
         if (p.act === 'capNhatTaiTuc') { var pt = Core.planTaiTuc(b, d.reten, u, Number(p.row), p.exp, p.ch, DEMO_TT, today); if (!pt.ok) return ok({ ok: false, loi: pt.errors }); d.reten = Core.apply(d.reten, pt); var ph2 = p.dk ? Core.phieuThu(b, Core.dkNguon(b, 'reten', d.reten, Number(p.row)), { soTien: p.ch.soTien, ngayTien: p.ch.ngayTien, hinhThucTien: p.ch.hinhThucTien }, p.dk, 'XEM TRƯỚC', u, today) : null; return ok({ ok: true, log: pt.log, phieu: ph2, thongBao: 'DEMO: đã lưu thử trong bộ nhớ trình duyệt.' }); }
         if (p.act === 'timKhach') return ok(Core.timKhach(b, d.data, u, p.q, 30));
         var opt = Core.options(b, d.misc, d.data), plan;
