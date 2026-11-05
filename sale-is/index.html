@@ -965,7 +965,106 @@ function veWrap(c, t, x, y, w, lh) { // viet chu xuong dong, tra ve y moi
   if (line) { c.fillText(line, x, y); y += lh; } return y;
 }
 function rr(c, x, y, w, h, r) { c.beginPath(); c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r); c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath(); }
-function vePhieu(p, done) {
+// 05/11/2026 22:50 chi chon phieu NGANG; ban doc giu lai la vePhieuDoc
+function vePhieu(p, done) { return vePhieuNgang(p, done); }
+function vePhieuNgang(p, done) {
+  var B = Core.PHIEU[p.brand] || Core.PHIEU.IS, W = 1700, cv = document.createElement('canvas'), c = cv.getContext('2d'), F = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
+  cv.width = W; cv.height = 1400;
+  var img = new Image();
+  img.onload = img.onerror = function () {
+    var M = 30, X = 76, INK = '#141b26', MUTE = '#6b7383', LINE = '#e3e7ee', HH = 200;
+    var khoan = p.khoan && p.khoan.length ? p.khoan : [{ ten: 'Học phí', tien: p.soTien }];
+    var LX = X, LW = 700, RX = X + LW + 60, RW = W - X - RX;
+    function txt(t, x, yy, font, color, al) { c.font = font; c.fillStyle = color; c.textAlign = al || 'left'; c.fillText(t, x, yy); c.textAlign = 'left'; }
+    function cap(t, x, y) { c.fillStyle = B.mau; rr(c, x, y - 24, 7, 30, 4); c.fill(); txt(t, x + 20, y, '800 25px ' + F, B.mau); return y + 44; }
+    function o(lb, v, x, y, w) { txt(lb, x, y, '500 21px ' + F, MUTE); c.font = '700 26px ' + F; c.fillStyle = INK; return veWrap(c, v || '-', x, y + 34, w, 34) + 14; }
+    function hai(y, l1, v1, l2, v2, r) { r = r || 0.5; var a = o(l1, v1, LX + 24, y, LW * r - 34), b = o(l2, v2, LX + LW * r + 10, y, LW * (1 - r) - 34); return Math.max(a, b); }
+    function body(H) {
+      c.fillStyle = '#eef1f6'; c.fillRect(0, 0, W, H);
+      c.save(); c.shadowColor = 'rgba(16,24,40,.12)'; c.shadowBlur = 24; c.shadowOffsetY = 6; rr(c, M, M, W - 2 * M, H - 2 * M, 26); c.fillStyle = '#fff'; c.fill(); c.restore();
+      c.save(); rr(c, M, M, W - 2 * M, H - 2 * M, 26); c.clip();
+      var g = c.createLinearGradient(0, M, W, M + HH); g.addColorStop(0, B.mau); g.addColorStop(1, shade(B.mau, -0.3)); c.fillStyle = g; c.fillRect(M, M, W - 2 * M, HH);
+      c.fillStyle = 'rgba(255,255,255,.06)'; for (var i = 0; i < 5; i++) { c.beginPath(); c.moveTo(860 + i * 80, M); c.lineTo(950 + i * 80, M); c.lineTo(800 + i * 80, M + HH); c.lineTo(710 + i * 80, M + HH); c.fill(); }
+      c.fillStyle = B.mau2; c.fillRect(M, M + HH, W - 2 * M, 7);
+      if (img.width) { c.globalAlpha = 0.045; var wh = 620, ww = img.width * wh / img.height; c.drawImage(img, (W - ww) / 2, M + HH + 120, ww, wh); c.globalAlpha = 1; }
+      c.restore();
+      // header trai: logo + ten
+      var lx = X; if (img.width) { var lh = 150, lw = img.width * lh / img.height; c.drawImage(img, X - 8, M + 25, lw, lh); lx = X - 8 + lw + 26; }
+      txt('TRUNG TÂM ' + B.mon.toUpperCase(), lx, M + 62, '700 22px ' + F, 'rgba(255,255,255,.88)');
+      txt(B.ngan, lx, M + 114, '900 50px ' + F, '#fff');
+      txt(B.diaChi, lx, M + 152, '500 21px ' + F, '#fff'); txt('Hotline: ' + B.hotline, lx, M + 181, '500 21px ' + F, '#fff');
+      // header phai: PHIEU THU + so/ngay
+      var rx = W - X;
+      txt('PHIẾU THU', rx, M + 108, '900 74px ' + F, '#fff', 'right');
+      c.font = '600 23px ' + F; var b1 = 'Số: ' + p.so, b2 = 'Ngày: ' + p.ngay, w1 = c.measureText(b1).width + 40, w2 = c.measureText(b2).width + 40, bx = rx - w1 - w2 - 14;
+      [[b1, w1], [b2, w2]].forEach(function (q) { rr(c, bx, M + 132, q[1], 42, 21); c.fillStyle = 'rgba(255,255,255,.95)'; c.fill(); txt(q[0], bx + q[1] / 2, M + 161, '700 23px ' + F, B.mau, 'center'); bx += q[1] + 14; });
+      // cot trai: hoc vien + khoa hoc
+      var y = M + HH + 70;
+      y = cap('THÔNG TIN HỌC VIÊN', LX, y);
+      y = o('Họ và tên học viên', p.ten, LX + 24, y, LW - 48);
+      y = hai(y, 'Ngày sinh', p.ngaySinh, 'Số điện thoại phụ huynh', p.sdt);
+      y = hai(y, 'Trường', [p.truong, p.lop ? 'lớp ' + p.lop : ''].filter(Boolean).join(', '), 'Cơ sở học', p.coSo, 0.62);
+      y = cap('THÔNG TIN KHOÁ HỌC', LX, y + 14);
+      y = o('Khoá học', p.khoa, LX + 24, y, LW - 48);
+      y = hai(y, 'Hình thức đăng ký', p.loai, 'Số buổi', p.soBuoi ? p.soBuoi + ' buổi' : '');
+      y = o('Thời gian học', p.batDau ? p.batDau + (p.ketThuc ? ' đến ' + p.ketThuc : '') : '', LX + 24, y, LW - 48);
+      if (p.lich) y = o('Lịch học', p.lich, LX + 24, y, LW - 48);
+      var yL = y;
+      // vach giua
+      // cot phai: cac khoan thu
+      y = cap('CÁC KHOẢN THU', RX, M + HH + 70);
+      var ty = y - 8, rh = 56, t0 = ty;
+      rr(c, RX, ty, RW, rh, 12); c.fillStyle = B.mau; c.fill(); c.fillRect(RX, ty + 26, RW, rh - 26);
+      txt('STT', RX + 22, ty + 37, '700 21px ' + F, '#fff'); txt('Nội dung', RX + 96, ty + 37, '700 21px ' + F, '#fff'); txt('Số tiền (đ)', RX + RW - 24, ty + 37, '700 21px ' + F, '#fff', 'right');
+      ty += rh;
+      khoan.forEach(function (k, i) {
+        c.fillStyle = i % 2 ? '#f6f8fb' : '#fff'; c.fillRect(RX, ty, RW, rh);
+        txt(String(i + 1), RX + 38, ty + 37, '600 25px ' + F, MUTE, 'center'); txt(k.ten, RX + 96, ty + 37, '600 25px ' + F, INK); txt(Core.tien(k.tien), RX + RW - 24, ty + 37, '700 26px ' + F, INK, 'right');
+        ty += rh;
+      });
+      c.fillStyle = shade(B.mau, 0.9); c.fillRect(RX, ty, RW, rh + 6);
+      txt('TỔNG CỘNG', RX + 96, ty + 40, '800 27px ' + F, B.mau); txt(Core.tien(p.soTien) + ' đ', RX + RW - 24, ty + 42, '900 36px ' + F, B.mau, 'right');
+      ty += rh + 6; c.strokeStyle = shade(B.mau, 0.6); c.lineWidth = 2; rr(c, RX, t0, RW, ty - t0, 12); c.stroke();
+      y = ty + 42; c.font = 'italic 500 24px ' + F; c.fillStyle = INK; y = veWrap(c, 'Bằng chữ: ' + p.bangChu + '.', RX + 4, y, RW - 8, 32);
+      if (p.conThieu) {
+        y += 6; txt('Tổng học phí khoá: ' + Core.tien((p.hocPhi || 0) + p.conThieu) + ' đ', RX + 4, y, '600 24px ' + F, INK);
+        y += 36; txt('Học phí còn phải nộp: ' + Core.tien(p.conThieu) + ' đ', RX + 4, y, '800 25px ' + F, '#b3261e'); y += 38;
+      }
+      y += 16; txt('Hình thức thanh toán:', RX + 4, y, '500 23px ' + F, MUTE);
+      c.font = '500 23px ' + F; var hx = RX + 4 + c.measureText('Hình thức thanh toán:').width + 24;
+      ['Chuyển khoản', 'Tiền mặt'].forEach(function (t) {
+        var on = p.hinhThuc === t; rr(c, hx, y - 24, 28, 28, 6); c.lineWidth = 3; c.strokeStyle = on ? B.mau : '#9aa3b2'; c.stroke();
+        if (on) { c.fillStyle = B.mau; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 4; c.beginPath(); c.moveTo(hx + 6, y - 10); c.lineTo(hx + 12, y - 4); c.lineTo(hx + 23, y - 18); c.stroke(); }
+        txt(t, hx + 38, y, (on ? '700' : '500') + ' 24px ' + F, on ? INK : MUTE); c.font = '700 24px ' + F; hx += 38 + c.measureText(t).width + 36;
+      });
+      y += 34; var bw = RW, BX = RX; rr(c, BX, y, bw, 100, 14); c.fillStyle = '#fff6dd'; c.fill(); c.strokeStyle = '#f2c94c'; c.lineWidth = 2; c.stroke();
+      c.beginPath(); c.arc(BX + 46, y + 50, 21, 0, 7); c.fillStyle = '#e0a400'; c.fill(); txt('!', BX + 46, y + 61, '900 30px ' + F, '#fff', 'center');
+      txt('LƯU Ý', BX + 84, y + 40, '800 22px ' + F, '#9a6b00');
+      var ly = 'Học phí đã nộp không được hoàn lại trong mọi trường hợp.', lf = 26; c.font = '700 ' + lf + 'px ' + F;
+      while (lf > 16 && c.measureText(ly).width > bw - 104) { lf--; c.font = '700 ' + lf + 'px ' + F; }
+      txt(ly, BX + 84, y + 76, '700 ' + lf + 'px ' + F, '#5c4300');
+      var yR = y + 100;
+      // hang duoi: dau (trai) + nguoi lap (phai)
+      y = Math.max(yL, yR) + 50;
+      c.strokeStyle = LINE; c.lineWidth = 2; c.beginPath(); c.moveTo(RX - 28, M + HH + 44); c.lineTo(RX - 28, y - 30); c.stroke();
+      var sx = RX + RW * 0.6;
+      txt('Người lập phiếu', sx, y + 8, '600 23px ' + F, MUTE, 'center'); txt('(đã ký điện tử)', sx, y + 38, 'italic 400 20px ' + F, '#9aa3b2', 'center');
+      txt(p.nguoiLap || '', sx, y + 104, '800 29px ' + F, INK, 'center');
+      c.save(); c.translate(LX + LW * 0.5, y + 50); c.rotate(-0.13); c.strokeStyle = '#c62828'; c.fillStyle = '#c62828'; c.globalAlpha = 0.9; c.lineWidth = 5;
+      rr(c, -150, -52, 300, 104, 16); c.stroke(); c.lineWidth = 2; rr(c, -139, -41, 278, 82, 10); c.stroke();
+      c.textAlign = 'center'; c.font = '900 44px ' + F; c.fillText(p.conThieu ? 'ĐÃ CỌC' : 'ĐÃ THU', 0, 10); c.font = '700 17px ' + F; c.fillText(B.ngan + ' · ' + p.ngay, 0, 34); c.restore();
+      y += 140; c.strokeStyle = LINE; c.lineWidth = 2; c.beginPath(); c.moveTo(X, y); c.lineTo(W - X, y); c.stroke();
+      y += 38; txt('Phiếu thu điện tử do trung tâm phát hành, xác nhận đã nhận đủ số tiền ghi trên phiếu.', W / 2, y, '500 20px ' + F, '#8a92a0', 'center');
+      txt('Mọi thắc mắc về học phí và lịch học, xin liên hệ hotline ' + B.hotline + '.', W / 2, y + 30, '500 20px ' + F, '#8a92a0', 'center');
+      return y + 30 + 36 + M;
+    }
+    var H = body(1400); cv.height = H; H = body(H);
+    if (p.so === 'XEM TRƯỚC') { c.save(); c.translate(W / 2, H / 2); c.rotate(-0.35); c.fillStyle = 'rgba(200,0,0,.13)'; c.font = '900 170px ' + F; c.textAlign = 'center'; c.fillText('XEM TRƯỚC', 0, 0); c.restore(); }
+    done(cv);
+  };
+  if (LOGOS[p.brand]) img.src = 'data:image/png;base64,' + LOGOS[p.brand]; else img.onload();
+}
+function vePhieuDoc(p, done) {
   var B = Core.PHIEU[p.brand] || Core.PHIEU.IS, W = 1080, cv = document.createElement('canvas'), c = cv.getContext('2d'), F = 'system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif';
   cv.width = W; cv.height = 3200;
   var img = new Image();
