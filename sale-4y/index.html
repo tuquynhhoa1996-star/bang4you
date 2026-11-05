@@ -34,6 +34,7 @@ textarea{min-height:64px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:8p
 .err{background:#ffe6e3;color:#8c1d14;border-radius:9px;padding:8px 10px;margin:8px 0;font-size:13px}
 .ok{background:#e2f6e8;color:#14703a;border-radius:9px;padding:8px 10px;margin:8px 0;font-size:13px}
 .login{max-width:340px;margin:12vh auto;padding:0 16px}.login h2{color:#13803d}
+.locs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;margin-bottom:2px}.locs button{flex:none;padding:7px 12px;border-radius:18px;border:1px solid #cfd6e2;background:#fff;color:#334;font-weight:600;font-size:13px}.locs button.on{background:#13803d;border-color:#13803d;color:#fff}
 .hide{display:none}.spin{text-align:center;padding:30px;color:#667}
 </style></head><body>
 <div id="app"></div>
@@ -480,6 +481,7 @@ function demoCall(p) {
           return ok({ token: 'demo', me: { u: p.u, ten: x.ten, brands: br }, thu: true });
         }
         if (p.act === 'me') return ok({ me: st.me, thu: true });
+        if (u && u.leader && p.loc) u = { ten: u.ten, saleName: p.loc, leader: false };
         if (p.act === 'homNay') return ok(Core.homNay(b, d.data, d.reten, u, today));
         if (p.act === 'tuyChon') { var o = Core.options(b, d.misc, d.data); if (!u.leader) o.sale = [u.saleName]; return ok(o); }
         if (p.act === 'timKhach') return ok(Core.timKhach(b, d.data, u, p.q, 30));
@@ -494,7 +496,7 @@ function demoCall(p) {
   });
 }
 function call(p) {
-  p.token = localStorage.getItem('appsale_token') || ''; p.brand = p.brand || st.brand;
+  p.token = localStorage.getItem('appsale_token') || ''; p.brand = p.brand || st.brand; if (st.loc && !p.loc) p.loc = st.loc;
   if (DEMO) return demoCall(p);
   return fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(p) })
     .then(function (r) { return r.json(); }).then(function (j) { if (!j.ok) { if (/hết hạn/.test(j.loi)) { localStorage.removeItem('appsale_token'); } throw new Error(j.loi); } return j.data; });
@@ -528,6 +530,7 @@ function setBrand(b) { st.brand = b; st.hn = null; st.opt = {}; st.kq = []; boot
 function setTab(t) { st.tab = t; render(); }
 function refresh() { st.hn = null; boot(); }
 function boot() {
+  try { st.loc = localStorage.getItem(locKey()) || ''; } catch (e) { st.loc = ''; }
   $('#app').innerHTML = '<div class="spin">Đang tải...</div>';
   Promise.all([call({ act: 'homNay' }), call({ act: 'tuyChon' })]).then(function (a) { st.hn = a[0]; st.opt = a[1]; render(); })
     .catch(function (e) { $('#app').innerHTML = '<div class="login"><div class="err">' + esc(e.message) + '</div><div class="btns"><button onclick="logout()">Đăng nhập lại</button><button class="pri" onclick="boot()">Thử lại</button></div></div>'; });
@@ -549,9 +552,15 @@ function sect(title, list, kind, total) {
   var more = total > list.length ? ' <span class="sub">(hiện ' + list.length + '/' + total + ')</span>' : '';
   return '<h3>' + title + more + '<em>' + total + '</em></h3>' + (list.length ? list.map(function (x) { return card(x, kind); }).join('') : '<div class="empty">Không có việc nào</div>');
 }
+function locKey() { return 'appsale_loc_' + st.brand; }
+function locBar() {
+  if (!st.me || !st.me.brands[st.brand].leader || !(st.opt.sale || []).length) return '';
+  return '<div class="sub">Xem theo sale:</div><div class="locs">' + [''].concat(st.opt.sale).map(function (n) { return '<button class="' + ((st.loc || '') === n ? 'on' : '') + '" onclick="setLoc(this.dataset.n)" data-n="' + esc(n) + '">' + (n ? esc(n) : 'Tất cả') + '</button>'; }).join('') + '</div>';
+}
+function setLoc(n) { st.loc = n || ''; try { localStorage.setItem(locKey(), st.loc); } catch (e) {} st.kq = []; st.hn = null; $('#app').innerHTML = '<div class="spin">Đang tải...</div>'; call({ act: 'homNay' }).then(function (h) { st.hn = h; render(); if (st.q) onq(st.q); }).catch(function (e) { $('#app').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }
 function homView() {
   var h = st.hn; if (!h) return '';
-  var dm = h.dem, s = '';
+  var dm = h.dem, s = locBar();
   if (h.canhBao.length) s += h.canhBao.map(function (w) { return '<div class="err">' + esc(w) + '</div>'; }).join('');
   s += '<div class="sub" style="margin-bottom:8px">Hôm nay ' + esc(h.ngay) + ' · ' + esc(h.ten) + '</div>';
   s += '<div class="chips"><div class="chip"><b>' + dm.hocThuHomNay + '</b><span>Học thử hôm nay</span></div><div class="chip"><b>' + dm.canGoi + '</b><span>Cần gọi</span></div><div class="chip"><b>' + dm.taiTuc + '</b><span>Tái tục sắp hạn</span></div></div>';
@@ -563,7 +572,7 @@ function homView() {
   return s;
 }
 function khachView() {
-  var s = '<label>Tìm theo SĐT hoặc tên bé</label><input id="q" value="' + esc(st.q) + '" oninput="onq(this.value)" placeholder="vd 0988... hoặc Nguyễn An"><div id="kq">' + kqList() + '</div>';
+  var s = locBar() + '<label>Tìm theo SĐT hoặc tên bé</label><input id="q" value="' + esc(st.q) + '" oninput="onq(this.value)" placeholder="vd 0988... hoặc Nguyễn An"><div id="kq">' + kqList() + '</div>';
   return s;
 }
 var qt;
@@ -580,7 +589,7 @@ function themView() {
     '<label>Cơ sở *</label>' + sel('f_cs', o.coSo, '') +
     '<div class="row2"><div><label>Ngày học thử</label><input id="f_ngay" type="date"></div><div><label>Giờ</label><input id="f_gio" type="time"></div></div>' +
     '<label>Kết quả</label><select id="f_kq"><option value="hen">Hẹn học thử</option><option value="da-hoc">Đã học thử</option><option value="dang-sap-xep">Đang sắp xếp</option><option value="khong-hoc-chot">Không học thử, chốt luôn</option></select>' +
-    (lead ? '<label>Sale phụ trách *</label>' + sel('f_sale', o.sale, '') : '') +
+    (lead ? '<label>Sale phụ trách *</label>' + sel('f_sale', o.sale, st.loc || '') : '') +
     '<label>Ghi chú</label><textarea id="f_note"></textarea><div id="te"></div><div class="btns"><button class="btn pri" onclick="saveNew(false)">Lưu học thử</button></div>';
 }
 function dmy(iso) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || ''); return m ? m[3] + '/' + m[2] + '/' + m[1] : ''; }
