@@ -20,8 +20,9 @@ button:disabled{opacity:.6}#msg{color:#c62828;font-size:14px;min-height:20px;mar
   <div id="msg"></div>
 </form>
 <script>
+(function () {
 var API = 'https://script.google.com/macros/s/AKfycbxVvbAjXnDirwauw3n8Lxtk0ZHzt6c6l6tj40ThchZbjKAOyEn7W2RToA9uTHkZLGle8w/exec';
-var KEY = 'bdh4you_token';
+var KEY = 'bdh4you_token', TT = 'hcns', SLOT = location.pathname;
 function show(html) { document.open(); document.write(html); document.close(); }
 function say(t) { document.getElementById('msg').textContent = t; }
 function busy(on) { document.getElementById('b').disabled = on; if (on) say('Đang mở bảng, chờ vài giây...'); }
@@ -35,29 +36,102 @@ function call1(body) {
   return fetch(API, { method: 'POST', body: JSON.stringify(body), credentials: 'omit', redirect: 'follow',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' } }).then(function (r) { return r.json(); });
 }
+// 05/11/2026: luu ban bang lan truoc tren may (IndexedDB, ~3 MB). Mo lai hien ngay ban luu, kiem ban moi o nen.
+function idb(mode, fn) {
+  return new Promise(function (ok, no) {
+    if (!window.indexedDB) return no(new Error('no idb'));
+    var r = indexedDB.open('bdh_cache', 1);
+    r.onupgradeneeded = function () { r.result.createObjectStore('pg'); };
+    r.onerror = function () { no(r.error); };
+    r.onsuccess = function () {
+      var d = r.result, t = d.transaction('pg', mode), q = fn(t.objectStore('pg'));
+      t.oncomplete = function () { d.close(); ok(q && q.result); };
+      t.onerror = t.onabort = function () { d.close(); no(t.error); };
+    };
+  });
+}
+function hen(p, ms) { return Promise.race([p, new Promise(function (ok) { setTimeout(ok, ms); })]).catch(function () {}); }
+function luu(tk, v, html) {
+  if (!v || !html) return Promise.resolve();
+  return hen(idb('readwrite', function (s) { return s.put({ tk: tk, v: v, html: html, t: Date.now() }, SLOT); }), 2000);
+}
+function xoa() { return hen(idb('readwrite', function (s) { return s.clear(); }), 2000); }
+// Doan kiem chay TRONG trang bang da hien (khong dung bien ngoai): hoi may chu co ban moi chua.
+function kiem(c) {
+  var cham = false, t0 = Date.now();
+  ['touchstart', 'scroll', 'keydown', 'mousedown', 'input'].forEach(function (e) { addEventListener(e, function () { cham = true; }, { passive: true, capture: true }); });
+  function db(fn) {
+    return new Promise(function (ok, no) {
+      var r = indexedDB.open('bdh_cache', 1);
+      r.onupgradeneeded = function () { r.result.createObjectStore('pg'); };
+      r.onerror = function () { no(r.error); };
+      r.onsuccess = function () { var d = r.result, t = d.transaction('pg', 'readwrite'); fn(t.objectStore('pg')); t.oncomplete = function () { d.close(); ok(); }; t.onerror = t.onabort = function () { d.close(); no(t.error); }; };
+    });
+  }
+  function the(html, bam) {
+    var b = document.createElement('div');
+    b.style.cssText = 'position:fixed;left:50%;transform:translateX(-50%);top:10px;z-index:99999;font:14px system-ui,sans-serif;background:#0b5bd3;color:#fff;border-radius:18px;padding:8px 16px;box-shadow:0 2px 8px rgba(0,0,0,.25);max-width:92vw;text-align:center' + (bam ? ';cursor:pointer' : ';background:#666');
+    b.innerHTML = html; if (bam) b.onclick = bam; document.body.appendChild(b); return b;
+  }
+  function goi(lan) {
+    return fetch(c.api, { method: 'POST', credentials: 'omit', redirect: 'follow', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify({ token: c.tk, tt: c.tt, v: c.v }) }).then(function (r) { return r.json(); })
+      .catch(function (e) { if (lan >= 2) throw e; return goi(lan + 1); });
+  }
+  goi(0).then(function (r) {
+    if (r.ok && r.same) return;
+    if (r.ok && r.html) {
+      var moi = function () { document.open(); document.write(r.html); document.close(); };
+      db(function (s) { s.put({ tk: c.tk, v: r.v, html: r.html, t: Date.now() }, c.slot); }).catch(function () {}).then(function () {
+        if (!cham && Date.now() - t0 < 8000) return moi();
+        the('Bảng vừa có số liệu mới. <b>Chạm để xem</b>', moi);
+      });
+      return;
+    }
+    if (r.het || /chưa được xem/i.test(r.msg || '')) {
+      try { localStorage.removeItem(c.key); } catch (e) {}
+      db(function (s) { s.clear(); }).catch(function () {}).then(function () { location.replace(c.slot); });
+    }
+  }).catch(function () {
+    var d = new Date(c.t), p = function (n) { return ('0' + n).slice(-2); };
+    the('Mạng yếu: đang xem bản lưu lúc ' + p(d.getHours()) + ':' + p(d.getMinutes()) + ' ' + p(d.getDate()) + '/' + p(d.getMonth() + 1) + ', chưa kiểm được bản mới', null);
+  });
+}
+function hienLuu(c, tk) {
+  var cfg = JSON.stringify({ api: API, key: KEY, tk: tk, tt: TT, v: c.v, t: c.t, slot: SLOT }).replace(/</g, '\\u003c');
+  var js = '<script>(' + kiem.toString() + ')(' + cfg + ');<\/script>', h = c.html, i = h.lastIndexOf('</body>');
+  show(i >= 0 ? h.slice(0, i) + js + h.slice(i) : h + js);
+}
+function moMang(tk) {
+  call({ token: tk, tt: TT }).then(function (r) {
+    if (r.ok) return luu(tk, r.v, r.html).then(function () { show(r.html); });
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    xoa(); busy(false); say(r.het ? '' : (r.msg || ''));
+  }).catch(function () { busy(false); say(''); });
+}
 document.getElementById('box').addEventListener('submit', function (ev) {
   ev.preventDefault();
   var u = document.getElementById('u').value.trim(), p = document.getElementById('p').value.trim();
   if (!u || !p) return say('Nhập tên đăng nhập và mã PIN.');
   busy(true);
-  call({ u: u, pin: p, tt: 'hcns' }).then(function (r) {
+  call({ u: u, pin: p, tt: TT }).then(function (r) {
     if (!r.ok) { busy(false); return say(r.msg || 'Không mở được bảng.'); }
     try { localStorage.setItem(KEY, r.token); } catch (e) {}
-    show(r.html);
+    luu(r.token, r.v, r.html).then(function () { show(r.html); });
   }).catch(function () { busy(false); say('Mạng chập chờn, bấm Xem bảng lần nữa.'); });
 });
 var tk = null;
 try {
-  if (/[?&]thoat=1/.test(location.search)) { localStorage.removeItem(KEY); history.replaceState(null, '', location.pathname); }
+  if (/[?&]thoat=1/.test(location.search)) { localStorage.removeItem(KEY); xoa(); history.replaceState(null, '', location.pathname); }
   tk = localStorage.getItem(KEY);
+  if (tk && !(Number(tk.split('.')[1]) >= Date.now())) { localStorage.removeItem(KEY); xoa(); tk = null; }
 } catch (e) {}
 if (tk) {
   busy(true);
-  call({ token: tk, tt: 'hcns' }).then(function (r) {
-    if (r.ok) return show(r.html);
-    // Tai khoan khong co quyen HCNS (vd sale): giu dang nhap bang chinh, chi bao loi o day
-    if (r.het) { try { localStorage.removeItem(KEY); } catch (e) {} }
-    busy(false); say(r.msg || '');
-  }).catch(function () { busy(false); say(''); });
+  hen(idb('readonly', function (s) { return s.get(SLOT); }), 1500).then(function (c) {
+    if (c && c.tk === tk && c.v && c.html) return hienLuu(c, tk);
+    moMang(tk);
+  });
 }
+})();
 </script></body></html>
