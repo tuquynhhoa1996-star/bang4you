@@ -239,10 +239,7 @@ var Core = (function () {
         var han = C.parseDate(hanStr, yr); if (!han) continue;
         var left = C.dayNum(han) - tn;
         if (left > R.taiTucTruoc || left < -R.taiTucQuaHan) continue;
-        out.taiTuc.push({ row: j + 1, ten: cell(q, col(hr, rc.name)), sdt: C.normPhone(raw(q, col(hr, rc.phone))), sdts: C.phones(raw(q, col(hr, rc.phone))), coSo: cell(q, col(hr, rc.base)),
-          khoa: cell(q, col(hr, rc.course)), sale: sc, han: C.fmtDate(han), conLai: left, lyDo: left < 0 ? 'Quá hạn ' + (-left) + ' ngày' : left === 0 ? 'Hết hạn hôm nay' : 'Còn ' + left + ' ngày',
-          cotHan: cell(q, col(hr, rc.endExt)) ? 'sau gia hạn' : 'gốc (chưa có cột sau gia hạn)', chot: cell(q, col(hr, rc.close)),
-          lienHe: cell(q, col(hr, rc.contact)), trangThai: cell(q, col(hr, rc.status)), note: raw(q, col(hr, rc.note)).slice(-200), ngayGoi: cell(q, col(hr, rc.care)) || cell(q, col(hr, rc.firstCall)) });
+        out.taiTuc.push(ttObj(rc, hr, q, j, han, left, sc));
       }
       out.taiTuc.sort(function (a, b) { return a.conLai - b.conLai; });
     }
@@ -251,6 +248,28 @@ var Core = (function () {
     out.hocThuChuaChot.sort(function (a, b) { return b.row - a.row; });
     out.dem = { hocThuHomNay: out.hocThuHomNay.length, hocThuNgayMai: out.hocThuNgayMai.length, canGoi: out.canGoi.length, hocThuChuaChot: out.hocThuChuaChot.length, taiTuc: out.taiTuc.length };
     ['hocThuHomNay', 'hocThuNgayMai', 'canGoi', 'hocThuChuaChot', 'taiTuc'].forEach(function (k) { if (out[k].length > R.toiDaMoiMuc) out[k] = out[k].slice(0, R.toiDaMoiMuc); });
+    return out;
+  };
+  // 1 dong file 3.26 -> the tai tuc (dung chung cho danh sach Hom nay va o tim kiem)
+  function ttObj(rc, hr, q, j, han, left, sc) {
+    return { row: j + 1, tt: 1, ten: cell(q, col(hr, rc.name)), sdt: C.normPhone(raw(q, col(hr, rc.phone))), sdts: C.phones(raw(q, col(hr, rc.phone))), coSo: cell(q, col(hr, rc.base)),
+      khoa: cell(q, col(hr, rc.course)), sale: sc, han: han ? C.fmtDate(han) : '', conLai: han ? left : null,
+      lyDo: !han ? 'Chưa có ngày hết hạn' : left < 0 ? 'Quá hạn ' + (-left) + ' ngày' : left === 0 ? 'Hết hạn hôm nay' : 'Còn ' + left + ' ngày',
+      cotHan: cell(q, col(hr, rc.endExt)) ? 'sau gia hạn' : 'gốc (chưa có cột sau gia hạn)', chot: cell(q, col(hr, rc.close)),
+      lienHe: cell(q, col(hr, rc.contact)), trangThai: cell(q, col(hr, rc.status)), note: raw(q, col(hr, rc.note)).slice(-200), ngayGoi: cell(q, col(hr, rc.care)) || cell(q, col(hr, rc.firstCall)) };
+  }
+  // 06/11/2026 Hong Viet: hoc sinh tai dang ki TRUOC HAN hoac BO SUNG HOC PHI khong tim thay de viet phieu thu
+  // (danh sach Hom nay chi lay -7..+14 ngay va bo qua dong da chot). Tra ve MOI dong 3.26 trong pham vi sale de o tim kiem tim duoc.
+  C.dsTaiTuc = function (brand, reten, user, today) {
+    var out = [], cfg = C.BRANDS[brand]; if (!reten || !reten.length) return out;
+    var rc = cfg.reten, hr = C.header(reten[0]), td = C.parseDate(today), tn = C.dayNum(td), yr = td.y;
+    for (var j = reten.length - 1; j >= 1; j--) {
+      var q = reten[j];
+      if (cell(q, col(hr, rc.name)) === '' && cell(q, col(hr, rc.phone)) === '') continue;
+      var sc = cell(q, col(hr, rc.sale)); if (!canSee(user, sc)) continue;
+      var han = C.parseDate(cell(q, col(hr, rc.endExt)) || cell(q, col(hr, rc.end)), yr);
+      out.push(ttObj(rc, hr, q, j, han, han ? C.dayNum(han) - tn : null, sc));
+    }
     return out;
   };
   function latest(a) { var b = null; a.forEach(function (x) { if (x && (!b || C.dayNum(x) > C.dayNum(b))) b = x; }); return b; }
@@ -870,7 +889,7 @@ function demoCall(p) {
         if (p.act === 'homNay') return ok(Core.homNay(b, d.data, d.reten, u, today));
         if (p.act === 'tuyChon') { var o = Core.options(b, d.misc, d.data); if (!u.leader) o.sale = [u.saleName]; o.tt = DEMO_TT; o.nguoiLap = [{ ten: 'Bùi Thị Lệ Quyên', pb: 'BR' }, { ten: 'Phan Thị Thanh Hiền', pb: 'BR' }, { ten: 'Trần Thị Minh Phương', pb: 'BĐ' }]; o.giai = Core.giaiGoiY(b, d.sk, o.coSo); o.giai.payMethod = o.payMethod; return ok(o); }
         if (p.act === 'capNhatTaiTuc') { var pt = Core.planTaiTuc(b, d.reten, u, Number(p.row), p.exp, p.ch, DEMO_TT, today); if (!pt.ok) return ok({ ok: false, loi: pt.errors }); d.reten = Core.apply(d.reten, pt); var sr2 = p.dk ? Core.dkNguon(b, 'reten', d.reten, Number(p.row)) : null, tn2 = { soTien: p.ch.soTien, ngayTien: p.ch.ngayTien, hinhThucTien: p.ch.hinhThucTien }, ph2 = p.dk ? demoKho(b, Core.phieuThu(b, sr2, tn2, p.dk, '', u, today), sr2, tn2, p.dk, 'demo') : null; return ok({ ok: true, log: pt.log, phieu: ph2, thongBao: 'DEMO: đã lưu thử trong bộ nhớ trình duyệt.' }); }
-        if (p.act === 'timKhach') return ok(Core.timKhach(b, d.data, u, p.q, 30));
+        if (p.act === 'timKhach') return ok(Core.timKhach(b, d.data, u, p.q, 30).concat(Core.locDs(Core.dsTaiTuc(b, d.reten, u, today), p.q, 30)));
         if (p.act === 'khoPhieu') return ok({ ds: d.kho.slice().reverse().map(function (r) { return { so: r.so, phieu: r.phieu, f: r.f, tien: r.tien, giai: !!r.phieu.giai, suaLan: r.suaLan, today: r.today }; }) });
         if (p.act === 'dkGiai') { var ep0 = Core.kiemPhieuThu(b, { nguoiLap: p.f.nguoiLap }); if (ep0.length) return ok({ ok: false, loi: ep0 }); var pg = Core.planGiai(b, d.sk, p.f, u, today); if (!pg.ok) return ok({ ok: false, loi: pg.errors, trungGiai: pg.trungGiai || null });
           var rw = d.sk[0].map(function () { return ''; }); Object.keys(pg.vals).forEach(function (j) { rw[j] = String(pg.vals[j]); }); d.sk.push(rw);
@@ -881,6 +900,7 @@ function demoCall(p) {
           var np = Core.phieuThu(b, rc.src, mm.tien, mm.f, rc.so, u, rc.today); np.suaLan = rc.suaLan + 1; np.suaNgay = today; rc.phieu = np; rc.suaLan = np.suaLan; rc.f = mm.f; rc.tien = mm.tien;
           return ok({ ok: true, phieu: np, log: ['DEMO: đã sửa phiếu'], canhBao: null }); }
         if (p.act === 'dsKhach') return ok(Core.dsKhach(b, d.data, u));
+        if (p.act === 'dsTaiTuc') return ok(Core.dsTaiTuc(b, d.reten, u, today));
         var opt = Core.options(b, d.misc, d.data), plan;
         if (p.act === 'themHocThu') plan = Core.planThemHocThu(b, d.data, u, p.f, opt, today);
         else plan = Core.planCapNhat(b, d.data, u, Number(p.row), p.exp, p.ch, opt, today);
@@ -923,8 +943,8 @@ function doLogin() {
   }).catch(function (e) { $('#le').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; });
 }
 function pickBrand(me) { st.brand = FIX || Object.keys(me.brands)[0]; }
-function logout() { try { Object.keys(localStorage).forEach(function (k) { if (/^appsale_nho_/.test(k)) localStorage.removeItem(k); }); } catch (e) {} st.ds = null; localStorage.removeItem('appsale_token'); st.me = null; render(); }
-function setBrand(b) { st.brand = b; st.hn = null; st.opt = {}; st.kq = []; st.ds = null; boot(); }
+function logout() { try { Object.keys(localStorage).forEach(function (k) { if (/^appsale_nho_/.test(k)) localStorage.removeItem(k); }); } catch (e) {} st.ds = null; st.dsTT = null; localStorage.removeItem('appsale_token'); st.me = null; render(); }
+function setBrand(b) { st.brand = b; st.hn = null; st.opt = {}; st.kq = []; st.ds = null; st.dsTT = null; boot(); }
 function setTab(t) { st.tab = t; render(); if (t === 'phieu') taiKho(); if (t === 'giai') giaiInit(); window.scrollTo(0, 0); }
 function refresh() { // cap nhat nen: giu man hinh cu, chi tai lai danh sach Hom nay (tuy chon da co thi khong tai lai)
   if (!st.opt || !st.hn || DEMO) { st.hn = null; boot(); return; }
@@ -945,7 +965,11 @@ var dsHen = 0;
 function taiDs() { // tai ca danh sach khach (1 lan, nen) de o tim kiem ra ngay
   var k = st.brand + '|' + (st.loc || ''), lan = ++dsHen;
   call({ act: 'dsKhach' }).then(function (r) { if (lan !== dsHen) return; st.ds = r; st.dsKey = k; if (st.q && $('#kq')) onq(st.q); }).catch(function () {});
+  call({ act: 'dsTaiTuc' }).then(function (r) { if (lan !== dsHen) return; st.dsTT = r; if (st.q && $('#kq')) onq(st.q); }).catch(function () {}); // 06/11/2026: hoc sinh 3.26 (tai ki truoc han, bo sung hoc phi)
 }
+function timMay(v) { return Core.locDs(st.ds, v, 30).concat(st.dsTT ? Core.locDs(st.dsTT, v, 20) : []); }
+function ttTim(n) { return (st.hn && st.hn.taiTuc || []).concat(st.dsTT || [], st.kq || []).filter(function (k) { return k.tt && k.row === n; })[0]; }
+function kqCard(x) { if (x.tt) { if (!x._lb) { x._lb = 1; x.lyDo = 'Học viên 3.26 · ' + x.lyDo + (x.trangThai ? ' · ' + x.trangThai : ''); } return card(x, 'tt'); } x.lyDo = [x.hocThu, x.chot].filter(Boolean).join(' · ') || 'Chưa có trạng thái'; return card(x, 'k'); }
 function boot() {
   try { st.loc = localStorage.getItem(locKey()) || ''; } catch (e) { st.loc = ''; }
   $('#app').innerHTML = '<div class="spin">Đang tải...</div>';
@@ -975,7 +999,7 @@ function locBar() {
   if (!st.me || !st.me.brands[st.brand].leader || !(st.opt.sale || []).length) return '';
   return '<div class="sub">Xem theo sale:</div><div class="locs">' + [''].concat(st.opt.sale).map(function (n) { return '<button class="' + ((st.loc || '') === n ? 'on' : '') + '" onclick="setLoc(this.dataset.n)" data-n="' + esc(n) + '">' + (n ? esc(n) : 'Tất cả') + '</button>'; }).join('') + '</div>';
 }
-function setLoc(n) { st.loc = n || ''; try { localStorage.setItem(locKey(), st.loc); } catch (e) {} st.kq = []; st.hn = null; $('#app').innerHTML = '<div class="spin">Đang tải...</div>'; st.ds = null; taiDs(); call({ act: 'homNay' }).then(function (h) { st.hn = h; ghiNho(); render(); if (st.q) onq(st.q); }).catch(function (e) { $('#app').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }
+function setLoc(n) { st.loc = n || ''; try { localStorage.setItem(locKey(), st.loc); } catch (e) {} st.kq = []; st.hn = null; $('#app').innerHTML = '<div class="spin">Đang tải...</div>'; st.ds = null; st.dsTT = null; taiDs(); call({ act: 'homNay' }).then(function (h) { st.hn = h; ghiNho(); render(); if (st.q) onq(st.q); }).catch(function (e) { $('#app').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }
 var HN_MUC = [['hocThuHomNay', 'Học thử hôm nay', 'Học thử hôm nay', 'hn'], ['canGoi', 'Cần gọi', 'Khách cần gọi', 'cg'], ['taiTuc', 'Tái tục sắp hạn', 'Tái tục sắp đến hạn', 'tt'],
   ['hocThuChuaChot', 'Xong, chưa chốt', 'Học thử xong, chưa chốt', 'cc'], ['hocThuNgayMai', 'Học thử mai', 'Học thử ngày mai', 'nm']];
 function homView() {
@@ -999,14 +1023,14 @@ var hqt;
 function onhq(v) {
   st.hq = v; clearTimeout(hqt); var b = $('#hnBody'); if (!b) return;
   if (v.trim().length < 2) { b.innerHTML = hnBody(); return; }
-  if (st.ds && st.dsKey === st.brand + '|' + (st.loc || '')) { st.kq = Core.locDs(st.ds, v, 30); b.innerHTML = hnBody(); return; }
+  if (st.ds && st.dsKey === st.brand + '|' + (st.loc || '')) { st.kq = timMay(v); b.innerHTML = hnBody(); return; }
   b.innerHTML = '<div class="spin">Đang tìm...</div>';
   hqt = setTimeout(function () { call({ act: 'timKhach', q: v }).then(function (r) { if (st.hq !== v) return; st.kq = r; if ($('#hnBody')) $('#hnBody').innerHTML = hnBody(); }).catch(function (e) { if ($('#hnBody')) $('#hnBody').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }, 350);
 }
 function hqKq() {
   var l = st.kq || [];
   return '<div class="btns" style="margin:0 0 6px"><button onclick="$(\'#hq\').value=\'\';onhq(\'\')">Xoá tìm, về danh sách hôm nay</button></div>' +
-    (l.length ? l.map(function (x) { x.lyDo = [x.hocThu, x.chot].filter(Boolean).join(' · ') || 'Chưa có trạng thái'; return card(x, 'k'); }).join('') : '<div class="empty">Không thấy học sinh trong phạm vi của bạn</div>');
+    (l.length ? l.map(kqCard).join('') : '<div class="empty">Không thấy học sinh trong phạm vi của bạn</div>');
 }
 function khachView() {
   var s = locBar() + '<label>Tìm theo SĐT hoặc tên bé</label><input id="q" value="' + esc(st.q) + '" oninput="onq(this.value)" placeholder="vd 0988... hoặc Nguyễn An"><div id="kq">' + kqList() + '</div>';
@@ -1015,9 +1039,9 @@ function khachView() {
 var qt;
 function onq(v) {
   st.q = v; clearTimeout(qt);
-  if (st.ds && st.dsKey === st.brand + '|' + (st.loc || '')) { st.kq = Core.locDs(st.ds, v, 30); if ($('#kq')) $('#kq').innerHTML = kqList(); return; }
+  if (st.ds && st.dsKey === st.brand + '|' + (st.loc || '')) { st.kq = timMay(v); if ($('#kq')) $('#kq').innerHTML = kqList(); return; }
   qt = setTimeout(function () { call({ act: 'timKhach', q: v }).then(function (r) { st.kq = r; $('#kq').innerHTML = kqList(); }).catch(function (e) { $('#kq').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }, 350); }
-function kqList() { return st.kq.length ? st.kq.map(function (x) { x.lyDo = [x.hocThu, x.chot].filter(Boolean).join(' · ') || 'Chưa có trạng thái'; return card(x, 'k'); }).join('') : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy khách trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>'; }
+function kqList() { return st.kq.length ? st.kq.map(kqCard).join('') : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy khách trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>'; }
 
 function sel(id, list, val, blank) { return '<select id="' + id + '">' + (blank !== false ? '<option value="">' + (blank || '- chọn -') + '</option>' : '') + (list || []).map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'; }
 function themView() {
@@ -1204,16 +1228,16 @@ function saveUpd(n) {
 
 // ---------- cap nhat TAI TUC (ghi file 3.26) ----------
 function openTT(n) {
-  var x = (st.hn && st.hn.taiTuc || []).filter(function (k) { return k.row === n; })[0]; if (!x) return;
+  var x = ttTim(n); if (!x) return;
   var o = st.opt.tt || {};
   var ov = document.createElement('div'); ov.className = 'sheet'; ov.id = 'ov';
   ov.innerHTML = '<div><h3 style="margin-top:0">' + esc(x.ten) + ' <span class="sub">' + esc(x.sdt) + '</span></h3>' +
-    '<div class="sub">Tái tục · ' + esc(x.khoa) + ' · hạn ' + esc(x.han) + ' (' + esc(x.lyDo) + ')</div>' +
+    '<div class="sub">Tái tục · ' + esc(x.khoa) + ' · hạn ' + esc(x.han || 'chưa có') + '</div>' +
     '<div class="sub">Hiện tại: ' + esc([x.lienHe, x.chot, x.trangThai].filter(Boolean).join(' · ') || 'chưa có trạng thái') + '</div>' +
     (x.note ? '<div class="note">' + esc(x.note) + '</div>' : '') +
     '<div class="btns"><button id="t_goi">Đánh dấu đã gọi</button></div>' +
     '<label>Tình trạng liên hệ</label>' + sel('t_lh', o.lienHe, '', '- giữ nguyên -') +
-    '<button class="btnThu" onclick="chotThu(\'t\')">Chốt tái tục - thu tiền, lập phiếu thu</button>' +
+    '<button class="btnThu" onclick="chotThu(\'t\')">Thu tiền, lập phiếu thu (tái tục, tái kí trước hạn, bổ sung học phí)</button>' +
     '<label>Chốt sale</label>' + sel('t_chot', o.chot, '', '- giữ nguyên -') +
     '<div id="t_tien" class="hide">' + dkHtml('td', x.khoa, '<div class="row2"><div><label>Học phí thu *</label><input id="t_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1;tongPT(\'td\')"></div><div><label>Hình thức *</label>' + sel('t_hinh', o.payMethod, '') + '</div></div><label>Ngày nhận tiền *</label><input id="t_nt" class="ngay" inputmode="numeric" placeholder="ngày/tháng/năm" maxlength="10" autocomplete="off">') + '</div>' +
     '<div id="t_ly" class="hide"><label>Lý do không retention *</label>' + sel('t_lydo', o.lyDo, '') + '</div>' +
@@ -1226,7 +1250,7 @@ function openTT(n) {
   $('#t_goi').onclick = function () { this.className = this.className ? '' : 'pri'; };
 }
 function saveTT(n) {
-  var x = (st.hn.taiTuc || []).filter(function (k) { return k.row === n; })[0], g = function (i) { var e = $('#' + i); return e ? e.value : ''; };
+  var x = ttTim(n), g = function (i) { var e = $('#' + i); return e ? e.value : ''; };
   var ch = { daGoi: $('#t_goi').className.indexOf('pri') >= 0, lienHe: g('t_lh'), chot: g('t_chot'), trangThai: g('t_tt'), hinhThuc: g('t_hf'), lyDo: /^không thành công/i.test(g('t_chot')) ? g('t_lydo') : '', soTien: /^đã thành công/i.test(g('t_chot')) ? g('t_st') : '', hinhThucTien: /^đã thành công/i.test(g('t_chot')) ? g('t_hinh') : '', ngayTien: /^đã thành công/i.test(g('t_chot')) ? dmy(g('t_nt')) : '', ghiNote: g('t_note') };
   if (!/^đã thành công/i.test(ch.chot)) return luuNen('openTT', n, x, { act: 'capNhatTaiTuc', row: n, exp: { ten: x.ten, sdt: x.sdt }, ch: ch, dk: null }, 'te2');
   $('#te2').innerHTML = '<div class="spin">Đang lưu...</div>';
