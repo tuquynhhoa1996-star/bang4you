@@ -379,6 +379,29 @@ var Core = (function () {
   // ---------- CAP NHAT KHACH (chi sua o can sua) ----------
   // ch: {coSo, ngaySinh, lop, truong, lienHe, hocThu, ngayHocThu, chot, lyDo, soTien, hinhThucTien, ngayTien, ngayGoi, ghiNote, nhanKhach}
   // exp: {ten, sdt} de doi chieu dong khong bi lech (ai do chen / xoa dong)
+  function thuThem126(brand, data, h, r, rowNo, ch, o, td, user) {
+    var d = C.BRANDS[brand].data, errs = [], row = data[0].map(function () { return ''; });
+    function put(name, v) { var c = col(h, name); if (c >= 0 && v !== '' && v != null) row[c] = v; }
+    function giu(name) { var c = col(h, name); if (c >= 0) put(name, cell(r, c)); }
+    [d.source, d.name, d.dob, d.cls, d.school, d.base, d.sale, d.contact, d.trialSt, d.form].forEach(giu);
+    var pc = col(h, d.phone); if (pc >= 0) row[pc] = raw(r, pc).trim();
+    var money = String(ch.soTien || '').replace(/[^\d]/g, ''), ht = T(ch.hinhThucTien), nt = C.parseDate(ch.ngayTien, td.y);
+    if (!money) errs.push('Thu thêm cần số tiền.');
+    if (!ht) errs.push('Thu thêm cần hình thức nhận tiền.');
+    if (!nt) errs.push('Thu thêm cần ngày nhận tiền (ngày/tháng/năm).');
+    if (ht && o.payMethod && o.payMethod.length && !hasOpt(o.payMethod, ht)) errs.push('Hình thức nhận tiền "' + ht + '" không có trong danh sách.');
+    if (errs.length) return { ok: false, errors: errs };
+    var pick = function (list, v) { var m = (list || []).filter(function (x) { return N(x) === N(v); })[0]; return m || v; };
+    put(d.close, pick(o.chot, 'Đã thành công')); put(d.amount, +money); put(d.payMethod, pick(o.payMethod, ht)); put(d.payDate, C.fmtDate(nt));
+    put(d.note, stamp(td, T(ch.ghiNote) || 'thu thêm học phí (bổ sung/đóng tiếp) từ dòng ' + rowNo, user.ten));
+    var nm = col(h, d.name), last = 0;
+    for (var i = data.length - 1; i >= 1; i--) { if (cell(data[i], nm) || cell(data[i], pc)) { last = i; break; } }
+    var moi = last + 2;
+    return { ok: true, edits: [], themDong: row, themDongRow: moi, taiKiMoi: true, tuDong: rowNo,
+      log: ['Thêm dòng mới ' + moi + ' trong 1.26 (không sửa dòng cũ ' + rowNo + ')', 'Số tiền: ' + money, 'Ngày nhận tiền: ' + C.fmtDate(nt)],
+      khach: { ten: cell(r, nm), sdt: C.normPhone(raw(r, pc)), row: moi } };
+  }
+
   C.planCapNhat = function (brand, data, user, rowNo, exp, ch, options, today) {
     var cfg = C.BRANDS[brand], d = cfg.data, h = C.header(data[0]), td = C.parseDate(today), errs = [], idx = rowNo - 1;
     if (!(idx >= 1 && idx < data.length)) return { ok: false, errors: ['Không thấy dòng ' + rowNo + '. Tải lại danh sách.'] };
@@ -387,6 +410,10 @@ var Core = (function () {
     if (!C.canTouch(user, cur.sale)) return { ok: false, errors: ['Khách này do ' + cur.sale + ' phụ trách, bạn không sửa được.'] };
     var edits = [], log = [], miss = C.checkHeaders(data, { a: [d.name, d.phone] });
     if (miss.length) return { ok: false, errors: ['File 1.26 thiếu cột: ' + miss.join(', ')] };
+    // 06/11/2026 chi Hoa: khach da chot thanh cong / da co so tien ma thu them (bo sung hoc phi, dong tiep)
+    // -> KHONG ghi de, them dong moi giong cach sale dang nhap tay. Bo trong NGAY GOI de khong dem thanh lead/chot moi tren bang dieu hanh,
+    // tien van vao dung thang theo NGAY NHAN TIEN.
+    if (/^đã thành công/i.test(T(ch.chot)) && (N(cur.chot) === N(DONE_CLOSE) || cell(r, col(h, d.amount)) !== '')) return thuThem126(brand, data, h, r, rowNo, ch, options || {}, td, user);
     function setCol(name, val, label) {
       var c = col(h, name);
       if (c < 0) { errs.push('File không có cột ' + name + '.'); return; }
