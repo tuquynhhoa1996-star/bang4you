@@ -1294,7 +1294,7 @@ function vePhieuNgang(p, done) {
       y = cap('THÔNG TIN HỌC VIÊN', LX, y);
       y = o('Họ và tên học viên', p.ten, LX + 24, y, LW - 48);
       y = hai(y, 'Ngày sinh', p.ngaySinh, 'Số điện thoại phụ huynh', p.sdt);
-      y = hai(y, 'Trường', [p.truong, p.lop ? 'lớp ' + p.lop : ''].filter(Boolean).join(', '), 'Cơ sở học', p.coSo, 0.62);
+      y = hai(y, 'Trường', [p.truong, p.lop ? (/^\s*lớp\b/i.test(p.lop) ? p.lop.trim() : 'lớp ' + p.lop) : ''].filter(Boolean).join(', '), 'Cơ sở học', p.coSo, 0.62);
       y = cap(p.giai ? 'THÔNG TIN GIẢI ĐẤU / SỰ KIỆN' : 'THÔNG TIN KHOÁ HỌC', LX, y + 14);
       y = o(p.giai ? 'Giải / sự kiện' : 'Khoá học', p.khoa, LX + 24, y, LW - 48);
       if (p.giai) y = o('Hình thức đăng ký', p.loai, LX + 24, y, LW - 48);
@@ -1393,7 +1393,7 @@ function vePhieuDoc(p, done) {
       y += 74;
       cap('THÔNG TIN HỌC VIÊN');
       y = o('Họ và tên học viên', p.ten, X + 28, CW - 56) + 18;
-      hai('Ngày sinh', p.ngaySinh, 'Trường', [p.truong, p.lop ? 'lớp ' + p.lop : ''].filter(Boolean).join(', '));
+      hai('Ngày sinh', p.ngaySinh, 'Trường', [p.truong, p.lop ? (/^\s*lớp\b/i.test(p.lop) ? p.lop.trim() : 'lớp ' + p.lop) : ''].filter(Boolean).join(', '));
       hai('Số điện thoại phụ huynh', p.sdt, 'Cơ sở học', p.coSo);
       y += 10; cap('THÔNG TIN KHOÁ HỌC');
       hai('Hình thức đăng ký', p.loai, 'Khoá học', p.khoa);
