@@ -1595,6 +1595,7 @@ function taiKho() {
   call({ act: 'khoPhieu' }).then(function (r) { st.kho = r.ds || []; if ($('#pkq')) $('#pkq').innerHTML = pkqList(); })
     .catch(function (e) { if ($('#pkq')) $('#pkq').innerHTML = '<div class="err">Chưa tải được kho phiếu: ' + esc(e.message) + '</div>' + pkqList(); });
 }
+function timKhachTuPhieu() { var q = (st.pq || '').trim(); st.tab = 'khach'; st.q = q; render(); onq(q); window.scrollTo(0, 0); } // 06/11: sale tim hoc sinh o kho phieu de lap phieu moi
 function onpq(v) { st.pq = v; if ($('#pkq')) $('#pkq').innerHTML = pkqList(); }
 function khopPhieu(p, q) { var t = Core.noDau(q), d = String(q).replace(/\D/g, ''); if (!t) return true; return Core.noDau(p.ten).indexOf(t) >= 0 || Core.noDau(p.so).indexOf(t) >= 0 || (d.length >= 4 && String(p.sdt || '').replace(/\D/g, '').indexOf(d) >= 0); }
 function pkqList() {
@@ -1609,6 +1610,7 @@ function pkqList() {
   if (l.length) out += '<h3>Chỉ lưu trên máy này<em>' + l.length + '</em></h3><div class="sub" style="margin:0 2px 6px">Phiếu lập trước khi có kho (trước 06/11), chỉ xem lại được. Cần sửa thì báo quản lý.</div>' +
     l.map(function (p) { var j = dsPhieu().indexOf(dsPhieu().filter(function (x) { return x.so === p.so; })[0]); return '<div class="card"><div class="t"><span class="n">' + esc(p.ten) + '</span><span class="sub">' + esc(p.so) + '</span></div><div class="sub">' + esc(p.ngay) + ' · ' + Core.tien(p.soTien) + 'đ · ' + esc(p.khoa) + '</div><div class="btns"><button onclick="moPhieu(dsPhieu()[' + j + '])">Xem / gửi lại</button></div></div>'; }).join('');
   if (!out) out = '<div class="empty">' + (st.kho ? (q ? 'Không thấy phiếu khớp' : 'Chưa có phiếu nào') : (st.thu && !DEMO ? 'Chế độ thử không có kho phiếu' : 'Đang tải...')) + '</div>';
+  if (q.length >= 2) out += '<div class="card" style="background:#f3f7ff"><div class="sub">Tab này chỉ chứa phiếu <b>đã lập</b>. Muốn <b>lập phiếu mới</b> cho học sinh: tìm học sinh ở tab Khách rồi bấm Chốt - thu tiền.</div><div class="btns"><button class="pri" onclick="timKhachTuPhieu()">Tìm \u201c' + esc(q) + '\u201d ở tab Khách</button></div></div>';
   return out;
 }
 function openSua(i) {
