@@ -1325,7 +1325,6 @@ function vePhieuNgang(p, done) {
         y += 36; txt('Học phí còn phải nộp: ' + Core.tien(p.conThieu) + ' đ', RX + 4, y, '800 25px ' + F, '#b3261e'); y += 38;
       }
       if (p.ghiChu) { y += 4; c.font = '600 23px ' + F; c.fillStyle = INK; y = veWrap(c, 'Ghi chú: ' + p.ghiChu, RX + 4, y, RW - 8, 31); }
-      if (p.suaLan) { y += 4; c.font = 'italic 600 22px ' + F; c.fillStyle = '#b3261e'; y = veWrap(c, 'Phiếu điều chỉnh lần ' + p.suaLan + (p.suaNgay ? ' ngày ' + p.suaNgay : '') + ', thay cho phiếu cùng số đã gửi trước.', RX + 4, y, RW - 8, 30); }
       y += 16; txt('Hình thức thanh toán:', RX + 4, y, '500 23px ' + F, MUTE);
       c.font = '500 23px ' + F; var hx = RX + 4 + c.measureText('Hình thức thanh toán:').width + 24;
       ['Chuyển khoản', 'Tiền mặt'].forEach(function (t) {
