@@ -918,7 +918,7 @@ function loginView() {
   $('#app').innerHTML = '<div class="login"><h2>App Sale' + (FIX ? ' ' + Core.BRANDS[FIX].ten : ' YGroup') + '</h2><p>Đăng nhập bằng tên và mã PIN của bảng điều hành.</p><label>Tên đăng nhập</label><input id="lu" autocapitalize="none" autocomplete="username"><label>Mã PIN</label><input id="lp" type="password" inputmode="numeric" autocomplete="current-password"><div id="le"></div><div class="btns"><button class="pri" onclick="doLogin()">Đăng nhập</button></div>' + (DEMO ? '<p class="sub">Bản demo: quyen / linh / sep, PIN 123456 (dữ liệu mẫu).</p>' : '') + '</div>';
 }
 function doLogin() {
-  call({ act: 'dangNhap', u: $('#lu').value, pin: $('#lp').value }).then(function (r) {
+  call({ act: 'dangNhap', u: $('#lu').value, pin: $('#lp').value, brand: FIX }).then(function (r) {
     localStorage.setItem('appsale_token', r.token); st.me = r.me; st.thu = r.thu; st.banSao = !!r.banSao; pickBrand(r.me); boot();
   }).catch(function (e) { $('#le').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; });
 }
