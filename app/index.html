@@ -76,7 +76,7 @@ function ve(kq) {
     if (a) {
       var tk = ls('cong_app_' + n), hash = tk ? '#tk=' + encodeURIComponent(tk) : '';
       // 31/10/2026: mo app qua trang cung ten mien (nhung iframe), khong mo thang script.google.com (loi "Khong the mo tep" khi may co nhieu tai khoan Google)
-      h += nut(APP[n].dd + hash, a.diemDanh ? 'Điểm danh ca' : 'Check-in buổi dạy', true);
+      h += nut(APP[n].dd + hash, a.diemDanh ? 'Điểm danh ca / Check-in' : 'Check-in buổi dạy', true);
       h += nut(APP[n].lich + hash, 'Lịch của tôi');
     }
     BANG[n].forEach(function (x) {
