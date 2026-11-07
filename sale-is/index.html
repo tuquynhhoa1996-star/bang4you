@@ -2776,8 +2776,8 @@ function dkHtml(p, khoa, giua) {
     '<div class="row2"><div><label>Khoản khác (tên)</label><input id="' + p + '_kt2" placeholder="vd áo khoác"></div><div><label>Tiền khoản khác</label><input id="' + p + '_kt3" class="tien" inputmode="numeric" oninput="tongPT(\'' + p + '\')"></div></div>' +
     '<div class="ok" id="' + p + '_tong">Tổng thu trên phiếu: 0đ</div>' +
     nlHtml(p) +
-    '<div class="row2"><div><label>Số buổi (in lên phiếu thu)</label><input id="' + p + '_sb" inputmode="numeric" placeholder="vd 24" oninput="this.dataset.tay=this.value?1:\'\'"></div><div><label>Lịch học (in lên phiếu thu)</label><input id="' + p + '_lh" placeholder="vd T2, T4 lúc 17h30"></div></div>' +
-    '<div class="sub" id="' + p + '_sbs">Số buổi tự tính theo tên khoá. Kèm riêng, Elite hay khoá không ghi số buổi thì gõ tay.</div>' +
+    '<div class="row2"><div><label>Số buổi (in lên phiếu thu)</label><input id="' + p + '_sb" inputmode="numeric" placeholder="vd 24" oninput="this.dataset.tay=this.value?1:\'\'"><div style="display:flex;gap:6px;margin-top:6px"><button type="button" class="btn ghost" style="flex:1;padding:6px" onclick="sbChon(\'' + p + '\',10)">10 buổi</button><button type="button" class="btn ghost" style="flex:1;padding:6px" onclick="sbChon(\'' + p + '\',20)">20 buổi</button></div></div><div><label>Lịch học (in lên phiếu thu)</label><input id="' + p + '_lh" placeholder="vd T2, T4 lúc 17h30"></div></div>' +
+    '<div class="sub" id="' + p + '_sbs">Số buổi tự tính theo tên khoá. Khoá không ghi số buổi thì bấm 10 buổi / 20 buổi, số khác thì gõ tay.</div>' +
     '<label>Ghi chú (in lên phiếu thu và gửi HCNS)</label><textarea id="' + p + '_gc" rows="2" placeholder="vd ưu đãi riêng: giảm 10% cho anh em ruột, tặng bóng"></textarea>';
 }
 function dkGet(p) {
@@ -2804,6 +2804,7 @@ function sbTu(p) { // tu dien so buoi theo ten khoa (sale go tay thi giu)
   var s = $('#' + p + '_khs'), kh = s && s.value && s.value !== '__khac' ? s.value : ($('#' + p + '_kh') || {}).value, e = $('#' + p + '_sb');
   if (!e || e.dataset.tay) return; var n = Core.soBuoi(kh); e.value = n ? String(n) : '';
 }
+function sbChon(p, n) { var e = $('#' + p + '_sb'); if (e) { e.value = String(n); e.dataset.tay = 1; } }
 function ktTu(p, doiBd) { sbTu(p); ktTu0(p, doiBd); }
 function ktTu0(p, doiBd) { // tu nhay ngay ket thuc khi co khoa + ngay bat dau. doiBd=1: sale vua DOI ngay bat dau -> tinh lai ngay ket thuc du da sua tay/dien san (07/11/2026, Linh HCNS)
   var s = $('#' + p + '_khs'), kh = s && s.value && s.value !== '__khac' ? s.value : ($('#' + p + '_kh') || {}).value, bd = ($('#' + p + '_bd') || {}).value, kt = $('#' + p + '_kt'), n = $('#' + p + '_kts');
