@@ -390,6 +390,10 @@ var Core = (function () {
     if (!ht) errs.push('Thu thêm cần hình thức nhận tiền.');
     if (!nt) errs.push('Thu thêm cần ngày nhận tiền (ngày/tháng/năm).');
     if (ht && o.payMethod && o.payMethod.length && !hasOpt(o.payMethod, ht)) errs.push('Hình thức nhận tiền "' + ht + '" không có trong danh sách.');
+    // 07/11/2026: thu tien lai tren dong 1.26 da dong tu lau = TAI DANG KI -> phai nhap o man Tai tuc (3.26), khong them dong 1.26 (dem doanh thu 2 lan)
+    var cuTien = C.parseDate(cell(r, col(h, d.payDate)), td.y);
+    if (!errs.length && cuTien && nt && C.dayNum(nt) - C.dayNum(cuTien) > 60)
+      errs.push('Bé đã đóng tiền ở dòng này ngày ' + C.fmtDate(cuTien) + ' (hơn 60 ngày trước). Đây là TÁI ĐĂNG KÍ: nhập ở màn Tái tục (file 3.26), không nhập ở 1.26 để tránh đếm doanh thu 2 lần. Nếu đúng là bổ sung học phí khoá đầu thì báo HCNS nhập tay.');
     if (errs.length) return { ok: false, errors: errs };
     var pick = function (list, v) { var m = (list || []).filter(function (x) { return N(x) === N(v); })[0]; return m || v; };
     put(d.close, pick(o.chot, 'Đã thành công')); put(d.amount, +money); put(d.payMethod, pick(o.payMethod, ht)); put(d.payDate, C.fmtDate(nt));
