@@ -404,18 +404,25 @@ var Core = (function () {
     if (!nt) errs.push('Thu thêm cần ngày nhận tiền (ngày/tháng/năm).');
     if (ht && o.payMethod && o.payMethod.length && !hasOpt(o.payMethod, ht)) errs.push('Hình thức nhận tiền "' + ht + '" không có trong danh sách.');
     // 07/11/2026: thu tien lai tren dong 1.26 da dong tu lau = TAI DANG KI -> phai nhap o man Tai tuc (3.26), khong them dong 1.26 (dem doanh thu 2 lan)
-    var cuTien = C.parseDate(cell(r, col(h, d.payDate)), td.y);
-    if (!errs.length && cuTien && nt && C.dayNum(nt) - C.dayNum(cuTien) > 60)
+    var cuTien = C.parseDate(cell(r, col(h, d.payDate)), td.y), hc = o.reten ? C.hanCuoi(brand, o.reten, C.normPhone(raw(r, col(h, d.phone))), cell(r, col(h, d.name))) : null;
+    if (!errs.length && hc && nt && C.laTaiKi(hc.han, nt))
+      errs.push('Bé có khoá học hết hạn ngày ' + C.fmtDate(hc.han) + ' (dòng ' + hc.dong + ' file 3.26), đóng lại trong vòng 1 tháng sau hạn nên tính TÁI KÍ: nhập ở màn Tái tục (3.26), không nhập ở 1.26.');
+    else if (!errs.length && !hc && cuTien && nt && C.dayNum(nt) - C.dayNum(cuTien) > 60)
       errs.push('Bé đã đóng tiền ở dòng này ngày ' + C.fmtDate(cuTien) + ' (hơn 60 ngày trước). Đây là TÁI ĐĂNG KÍ: nhập ở màn Tái tục (file 3.26), không nhập ở 1.26 để tránh đếm doanh thu 2 lần. Nếu đúng là bổ sung học phí khoá đầu thì báo HCNS nhập tay.');
     // 07/11/2026: chong thu 2 lan - cung SDT da co dung so tien nay cung ngay nhan tien (vd dong cu, hoac lan bam truoc da ghi)
+    var trungDong = 0;
     if (!errs.length && money && nt && pc >= 0) {
       var sdt0 = C.normPhone(raw(r, pc)), ac = col(h, d.amount), pdc = col(h, d.payDate);
       for (var k = 1; k < data.length; k++) {
         if (C.normPhone(raw(data[k], pc)) !== sdt0) continue;
         var am = String(cell(data[k], ac)).replace(/[^\d]/g, ''), pd = C.parseDate(cell(data[k], pdc), td.y);
-        if (am === money && pd && C.dayNum(pd) === C.dayNum(nt)) { errs.push('Bé đã có ' + money.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ ngày ' + C.fmtDate(nt) + ' ở dòng ' + (k + 1) + ' rồi. Không thu lại để tránh tính tiền 2 lần. Cần lập phiếu thu cho khoản này thì báo HCNS.'); break; }
+        if (am === money && pd && C.dayNum(pd) === C.dayNum(nt)) { trungDong = k + 1; break; }
       }
     }
+    // dong da co dung khoan tien nay (sale nhap tay vao Sheet, hoac lan bam truoc) -> KHONG them dong 1.26, chi lap phieu thu + dong DS dang ki tu dong do
+    if (!errs.length && trungDong) return { ok: true, edits: [], chiPhieu: true, taiKiMoi: true, tuDong: rowNo,
+      log: ['Dòng ' + trungDong + ' đã có ' + money.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ ngày ' + C.fmtDate(nt) + ': không thêm tiền vào 1.26, chỉ lập phiếu thu và danh sách đăng kí'],
+      khach: { ten: cell(data[trungDong - 1], col(h, d.name)), sdt: C.normPhone(raw(data[trungDong - 1], pc)), row: trungDong } };
     if (errs.length) return { ok: false, errors: errs };
     var pick = function (list, v) { var m = (list || []).filter(function (x) { return N(x) === N(v); })[0]; return m || v; };
     put(d.close, pick(o.chot, 'Đã thành công')); put(d.amount, +money); put(d.payMethod, pick(o.payMethod, ht)); put(d.payDate, C.fmtDate(nt));
@@ -559,6 +566,10 @@ var Core = (function () {
     var r = reten[idx], ten = cell(r, col(h, rc.name)), sdt = C.normPhone(raw(r, col(h, rc.phone))), sale = cell(r, col(h, rc.sale));
     if (exp && ((exp.sdt && C.normPhone(exp.sdt) !== sdt) || (exp.ten != null && noDau(exp.ten) !== noDau(ten)))) return { ok: false, errors: ['Dòng này vừa bị thay đổi trong file 3.26. Tải lại rồi sửa lại.'] };
     if (!C.canTouch(user, sale)) return { ok: false, errors: ['Học sinh này do ' + sale + ' phụ trách, bạn không sửa được.'] };
+    if (N(T(ch.chot)) === N(DONE_CLOSE) && T(ch.ngayTien)) {
+      var ntq = C.parseDate(ch.ngayTien, td.y), hq = C.hanCuoi(brand, reten, sdt, ten);
+      if (ntq && hq && !C.laTaiKi(hq.han, ntq)) return { ok: false, errors: ['Bé hết hạn khoá ngày ' + C.fmtDate(hq.han) + ', đóng lại ngày ' + C.fmtDate(ntq) + ' là quá 1 tháng nên tính KHÁCH MỚI: nhập ở màn Khách (file 1.26), không nhập tái kí ở 3.26.'] };
+    }
     // 06/11/2026 chi Hoa: dong da chot thanh cong (hoac da co so tien) ma thu tien lan nua (tai ki truoc han, bo sung hoc phi)
     // -> KHONG ghi de dong cu, them DONG MOI cuoi file 3.26 chep thong tin hoc sinh roi dien thong tin tai ki.
     if (N(T(ch.chot)) === N(DONE_CLOSE) && (N(cell(r, col(h, rc.close))) === N(DONE_CLOSE) || cell(r, col(h, rc.amount)) !== '')) return taiKiMoi(brand, reten, h, r, rowNo, ch, o, td, user, dk);
@@ -679,6 +690,22 @@ var Core = (function () {
     var s = noDau(k), m = /(\d+)\s*thang/.exec(s); if (m) return +m[1];
     m = /(\d+)\s*nam/.exec(s); return m ? 12 * m[1] : 0;
   };
+  // 07/11/2026 chi Hoa: be nghi roi quay lai hoc - trong 1 thang sau han (NGAY KET THUC SAU KHI GIA HAN, khong co thi NGAY KET THUC) = TAI KI (3.26);
+  // qua 1 thang = KHACH MOI (1.26). hanCuoi: han muon nhat cua be (cung SDT, cung ten neu co ten) trong 3.26.
+  C.hanCuoi = function (brand, reten, sdt, ten) {
+    if (!reten || reten.length < 2 || !sdt) return null;
+    var rc = C.BRANDS[brand].reten, h = C.header(reten[0]), pc = col(h, rc.phone), nc = col(h, rc.name), ec = col(h, rc.endExt), kc = col(h, rc.end), best = null, dong = 0;
+    if (pc < 0) return null;
+    for (var i = 1; i < reten.length; i++) {
+      var r = reten[i]; if (C.normPhone(raw(r, pc)) !== sdt) continue;
+      if (ten && cell(r, nc) && noDau(cell(r, nc)) !== noDau(ten)) continue;
+      var e = C.parseDate(cell(r, ec)) || C.parseDate(cell(r, kc));
+      if (e && (!best || C.dayNum(e) > C.dayNum(best))) { best = e; dong = i + 1; }
+    }
+    return best ? { han: best, dong: dong } : null;
+  };
+  C.TAI_KI_THANG = 1;
+  C.laTaiKi = function (han, ngayTien) { return C.dayNum(ngayTien) <= C.dayNum(C.addMonths(han, C.TAI_KI_THANG)); };
   C.addMonths = function (o, n) {
     var y = o.y + Math.floor((o.m - 1 + n) / 12), m = (o.m - 1 + n) % 12 + 1, last = new Date(Date.UTC(y, m, 0)).getUTCDate();
     return { y: y, m: m, d: Math.min(o.d, last) };
