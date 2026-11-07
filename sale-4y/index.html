@@ -431,6 +431,9 @@ var Core = (function () {
     // nhan khach chua co sale
     if (ch.nhanKhach && T(cur.sale) === '') setCol(d.sale, user.saleName || T(ch.sale), 'Sale');
     // quy tac: o da co chu khong duoc xoa trang (gui rong = khong doi)
+    // 07/11/2026 sale Minh Phuong: khach chua co ten hoc sinh -> sale dien ten khi cap nhat (chi dien o trong, khong sua ten da co)
+    if (T(ch.ten)) { if (T(cur.ten)) errs.push('Khách này đã có tên "' + cur.ten + '". Muốn sửa tên thì báo HCNS sửa trong file 1.26.'); else setCol(d.name, T(ch.ten).replace(/\s+/g, ' '), 'Tên học sinh'); }
+    else if (!T(cur.ten) && /^đã thành công/i.test(T(ch.chot))) errs.push('Khách chưa có tên học sinh: điền Tên học sinh trước khi chốt (tên in trên phiếu thu).');
     if (T(ch.coSo)) { opt(o.coSo, T(ch.coSo), 'Cơ sở'); setCol(d.base, T(ch.coSo), 'Cơ sở'); }
     if (T(ch.ngaySinh)) { var ns2 = C.parseDate(T(ch.ngaySinh)); if (!ns2) errs.push('Ngày sinh không đúng dạng ngày/tháng/năm.'); else setCol(d.dob, C.fmtDate(ns2), 'Ngày sinh'); }
     if (T(ch.lop)) { opt(o.lop, T(ch.lop), 'Lớp'); setCol(d.cls, T(ch.lop), 'Lớp'); }
@@ -1225,6 +1228,7 @@ function openUpd(n) {
   var ov = document.createElement('div'); ov.className = 'sheet'; ov.id = 'ov';
   ov.innerHTML = '<div><h3 style="margin-top:0">' + esc(x.ten || '(chưa có tên)') + ' <span class="sub">' + esc(x.sdt) + '</span></h3>' +
     '<div class="sub">Hiện tại: ' + esc([x.lienHe, x.hocThu, x.chot].filter(Boolean).join(' · ') || 'chưa có trạng thái') + '</div>' +
+    (x.ten ? '' : '<label>Tên học sinh (khách chưa có tên)</label><input id="u_ten" placeholder="Họ và tên bé" autocomplete="off">') +
     (claim ? '<label><input type="checkbox" id="u_nhan" checked style="width:auto"> Nhận khách này về tên mình</label>' : '') +
     '<button class="btnThu" onclick="chotThu(\'u\')">Chốt đăng kí - thu tiền, lập phiếu thu</button>' +
     '<div class="btns"><button id="u_goi" class="">Đánh dấu đã gọi</button></div>' +
@@ -1283,7 +1287,7 @@ function loiNen(mo, n, ten, form, loi, oLoi) {
 window.addEventListener('beforeunload', function (e) { if (dangLuu > 0) { e.preventDefault(); e.returnValue = 'Đang lưu, chờ chút'; return e.returnValue; } });
 function saveUpd(n) {
   var x = findRow(n), g = function (i) { var e = $('#' + i); return e ? e.value : ''; };
-  var ch = { lienHe: g('u_lh'), hocThu: g('u_ht'), ngayHocThu: dmy(g('u_ngay')), chot: g('u_chot'), soTien: g('u_st'), hinhThucTien: g('u_hinh'), ngayTien: dmy(g('u_nt')), lyDo: g('u_lydo'), ghiNote: g('u_note'), coSo: g('u_cs'), ngaySinh: dmy(g('u_ns')), lop: g('u_lop'), truong: g('u_truong'), daGoi: $('#u_goi').className.indexOf('pri') >= 0, nhanKhach: !!($('#u_nhan') && $('#u_nhan').checked) };
+  var ch = { ten: g('u_ten').trim(), lienHe: g('u_lh'), hocThu: g('u_ht'), ngayHocThu: dmy(g('u_ngay')), chot: g('u_chot'), soTien: g('u_st'), hinhThucTien: g('u_hinh'), ngayTien: dmy(g('u_nt')), lyDo: g('u_lydo'), ghiNote: g('u_note'), coSo: g('u_cs'), ngaySinh: dmy(g('u_ns')), lop: g('u_lop'), truong: g('u_truong'), daGoi: $('#u_goi').className.indexOf('pri') >= 0, nhanKhach: !!($('#u_nhan') && $('#u_nhan').checked) };
   if (!/^đã thành công/i.test(ch.chot)) return luuNen('openUpd', n, x, { act: 'capNhat', row: n, exp: { ten: x.ten, sdt: x.sdt }, ch: ch, dk: null }, 'ue');
   $('#ue').innerHTML = '<div class="spin">Đang lưu...</div>';
   call({ act: 'capNhat', row: n, exp: { ten: x.ten, sdt: x.sdt }, ch: ch, dk: /^đã thành công/i.test(ch.chot) ? dkGet('ud') : null }).then(function (r) {
