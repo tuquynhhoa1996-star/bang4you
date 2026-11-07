@@ -385,7 +385,18 @@ var Core = (function () {
     var d = C.BRANDS[brand].data, errs = [], row = data[0].map(function () { return ''; });
     function put(name, v) { var c = col(h, name); if (c >= 0 && v !== '' && v != null) row[c] = v; }
     function giu(name) { var c = col(h, name); if (c >= 0) put(name, cell(r, c)); }
-    [d.source, d.name, d.dob, d.cls, d.school, d.base, d.sale, d.contact, d.trialSt, d.form].forEach(giu);
+    // 07/11/2026 (loi D3460 "Tuyen U14"): o co danh sach chon ma gia tri cu khong nam trong danh sach -> bo trong, Sheet chan se de lai dong ghi do.
+    // Sale chon Lop/Co so moi trong form thi lay gia tri do.
+    var boQua = [];
+    function giuChon(name, list, moi, label) {
+      var c = col(h, name); if (c < 0) return;
+      var v = T(moi) || cell(r, c);
+      if (v && list && list.length && !hasOpt(list, v)) { if (T(moi)) errs.push(label + ' "' + v + '" không có trong danh sách của file.'); else boQua.push(label + ' "' + v + '"'); return; }
+      put(name, v);
+    }
+    [d.name, d.dob, d.school, d.sale, d.form].forEach(giu);
+    giuChon(d.source, o.nguon, '', 'Nguồn'); giuChon(d.cls, o.lop, ch.lop, 'Lớp'); giuChon(d.base, o.coSo, ch.coSo, 'Cơ sở');
+    giuChon(d.contact, o.lienHe, '', 'Liên hệ'); giuChon(d.trialSt, o.hocThu, '', 'Học thử');
     var pc = col(h, d.phone); if (pc >= 0) row[pc] = raw(r, pc).trim();
     var money = String(ch.soTien || '').replace(/[^\d]/g, ''), ht = T(ch.hinhThucTien), nt = C.parseDate(ch.ngayTien, td.y);
     if (!money) errs.push('Thu thêm cần số tiền.');
@@ -396,6 +407,15 @@ var Core = (function () {
     var cuTien = C.parseDate(cell(r, col(h, d.payDate)), td.y);
     if (!errs.length && cuTien && nt && C.dayNum(nt) - C.dayNum(cuTien) > 60)
       errs.push('Bé đã đóng tiền ở dòng này ngày ' + C.fmtDate(cuTien) + ' (hơn 60 ngày trước). Đây là TÁI ĐĂNG KÍ: nhập ở màn Tái tục (file 3.26), không nhập ở 1.26 để tránh đếm doanh thu 2 lần. Nếu đúng là bổ sung học phí khoá đầu thì báo HCNS nhập tay.');
+    // 07/11/2026: chong thu 2 lan - cung SDT da co dung so tien nay cung ngay nhan tien (vd dong cu, hoac lan bam truoc da ghi)
+    if (!errs.length && money && nt && pc >= 0) {
+      var sdt0 = C.normPhone(raw(r, pc)), ac = col(h, d.amount), pdc = col(h, d.payDate);
+      for (var k = 1; k < data.length; k++) {
+        if (C.normPhone(raw(data[k], pc)) !== sdt0) continue;
+        var am = String(cell(data[k], ac)).replace(/[^\d]/g, ''), pd = C.parseDate(cell(data[k], pdc), td.y);
+        if (am === money && pd && C.dayNum(pd) === C.dayNum(nt)) { errs.push('Bé đã có ' + money.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + 'đ ngày ' + C.fmtDate(nt) + ' ở dòng ' + (k + 1) + ' rồi. Không thu lại để tránh tính tiền 2 lần. Cần lập phiếu thu cho khoản này thì báo HCNS.'); break; }
+      }
+    }
     if (errs.length) return { ok: false, errors: errs };
     var pick = function (list, v) { var m = (list || []).filter(function (x) { return N(x) === N(v); })[0]; return m || v; };
     put(d.close, pick(o.chot, 'Đã thành công')); put(d.amount, +money); put(d.payMethod, pick(o.payMethod, ht)); put(d.payDate, C.fmtDate(nt));
@@ -404,7 +424,7 @@ var Core = (function () {
     for (var i = data.length - 1; i >= 1; i--) { if (cell(data[i], nm) || cell(data[i], pc)) { last = i; break; } }
     var moi = last + 2;
     return { ok: true, edits: [], themDong: row, themDongRow: moi, taiKiMoi: true, tuDong: rowNo,
-      log: ['Thêm dòng mới ' + moi + ' trong 1.26 (không sửa dòng cũ ' + rowNo + ')', 'Số tiền: ' + money, 'Ngày nhận tiền: ' + C.fmtDate(nt)],
+      log: ['Thêm dòng mới ' + moi + ' trong 1.26 (không sửa dòng cũ ' + rowNo + ')', 'Số tiền: ' + money, 'Ngày nhận tiền: ' + C.fmtDate(nt)].concat(boQua.length ? ['Để trống (không có trong danh sách chọn): ' + boQua.join(', ')] : []),
       khach: { ten: cell(r, nm), sdt: C.normPhone(raw(r, pc)), row: moi } };
   }
 
