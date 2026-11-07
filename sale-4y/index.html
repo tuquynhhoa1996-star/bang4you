@@ -2822,7 +2822,8 @@ function fmtTien(e) { // 1700000 -> 1.700.000 ngay khi go; chu nhu 500k thi de n
   var f = d ? Core.tien(+d) : ''; if (f === v) return; e.value = f;
   var k = 0, i = 0; while (i < f.length && k < truoc) { if (/\d/.test(f[i])) k++; i++; } try { e.setSelectionRange(i, i); } catch (x) {}
 }
-document.addEventListener('input', function (ev) { var t = ev.target; if (t && t.classList && t.classList.contains('tien')) fmtTien(t); }, true);
+// 07/11/2026 Linh bao: dinh dang ngay khi go lam bo go tieng Viet (Unikey/EVKey) chen sai so (go 1.000.000 ra 1.100.000). Chi dinh dang khi roi o.
+document.addEventListener('focusout', function (ev) { var t = ev.target; if (t && t.classList && t.classList.contains('tien')) { var cu = t.value; fmtTien(t); if (t.value !== cu) try { t.dispatchEvent(new Event('input', { bubbles: true })); } catch (x) {} } }, true);
 function hpId(p) { return { ud: 'u_st', td: 't_st' }[p] || p + '_st'; }
 function hlKey() { return 'appsale_hoten_' + (st.me ? st.me.u : ''); }
 function hoTenLap() { try { return localStorage.getItem(hlKey()) || ''; } catch (e) { return ''; } }
