@@ -2692,6 +2692,9 @@ function onq(v) {
   qt = setTimeout(function () { call({ act: 'timKhach', q: v }).then(function (r) { st.kq = r; $('#kq').innerHTML = kqList(); }).catch(function (e) { $('#kq').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }, 350); }
 function kqList() { return st.kq.length ? st.kq.map(kqCard).join('') : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy khách trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>'; }
 
+function pmDs(a, b) { // file khong khai danh sach hinh thuc tien thi van cho chon (07/11/2026, Linh bao loi tai ki 4Y)
+  var l = (a && a.length ? a : b && b.length ? b : []); return l.length ? l : ['Chuyển khoản', 'Tiền mặt'];
+}
 function sel(id, list, val, blank) { return '<select id="' + id + '">' + (blank !== false ? '<option value="">' + (blank || '- chọn -') + '</option>' : '') + (list || []).map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'; }
 function themView() {
   var o = st.opt, lead = st.me.brands[st.brand].leader, today = Sample.TODAY;
@@ -2846,7 +2849,7 @@ function openUpd(n) {
     '<label>Tình trạng học thử</label>' + sel('u_ht', o.hocThu, '', '- giữ nguyên -') +
     '<label>Đặt/đổi ngày học thử</label><input id="u_ngay" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">' +
     '<label>Chốt sale</label>' + sel('u_chot', o.chot, '', '- giữ nguyên -') +
-    '<div id="u_tien" class="hide">' + dkHtml('ud', '', '<div class="row2"><div><label>Học phí thu *</label><input id="u_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1;tongPT(\'ud\')"></div><div><label>Hình thức</label>' + sel('u_hinh', o.payMethod, '') + '</div></div><label>Ngày nhận tiền</label><input id="u_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">') + bpNut('u', n) + '</div>' +
+    '<div id="u_tien" class="hide">' + dkHtml('ud', '', '<div class="row2"><div><label>Học phí thu *</label><input id="u_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1;tongPT(\'ud\')"></div><div><label>Hình thức</label>' + sel('u_hinh', pmDs(o.payMethod), '') + '</div></div><label>Ngày nhận tiền</label><input id="u_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">') + bpNut('u', n) + '</div>' +
     '<div id="u_ly" class="hide"><label>Lý do không đi học</label>' + sel('u_lydo', o.lyDo, '') + '</div>' +
     '<label>Ghi chú thêm (chỉ nối thêm, không xoá chữ cũ)</label><textarea id="u_note"></textarea>' +
     '<div class="sub" style="margin-top:8px">Thông tin bé: ' + esc([x.ngaySinh ? 'sinh ' + x.ngaySinh : 'CHƯA CÓ NGÀY SINH', x.truong || 'CHƯA CÓ TRƯỜNG', x.lop || 'chưa có lớp'].join(' · ')) + '</div>' +
@@ -2927,7 +2930,7 @@ function openTT(n) {
     '<label>Tình trạng liên hệ</label>' + sel('t_lh', o.lienHe, '', '- giữ nguyên -') +
     '<button class="btnThu" onclick="chotThu(\'t\')">Thu tiền, lập phiếu thu (tái tục, tái kí trước hạn, bổ sung học phí)</button>' +
     '<label>Chốt sale</label>' + sel('t_chot', o.chot, '', '- giữ nguyên -') +
-    '<div id="t_tien" class="hide">' + dkHtml('td', x.khoa, '<div class="row2"><div><label>Học phí thu *</label><input id="t_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1;tongPT(\'td\')"></div><div><label>Hình thức *</label>' + sel('t_hinh', o.payMethod, '') + '</div></div><label>Ngày nhận tiền *</label><input id="t_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">') + bpNut('t', n) + '</div>' +
+    '<div id="t_tien" class="hide">' + dkHtml('td', x.khoa, '<div class="row2"><div><label>Học phí thu *</label><input id="t_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1;tongPT(\'td\')"></div><div><label>Hình thức *</label>' + sel('t_hinh', pmDs(o.payMethod), '') + '</div></div><label>Ngày nhận tiền *</label><input id="t_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">') + bpNut('t', n) + '</div>' +
     '<div id="t_ly" class="hide"><label>Lý do không retention *</label>' + sel('t_lydo', o.lyDo, '') + '</div>' +
     '<div class="row2"><div><label>Tình trạng học viên</label>' + sel('t_tt', o.trangThai, '', '- giữ nguyên -') + '</div><div><label>Hình thức học</label>' + sel('t_hf', o.hinhThuc, '', '- giữ nguyên -') + '</div></div>' +
     '<label>Ghi chú thêm (nối thêm, không xoá chữ cũ)</label><textarea id="t_note" placeholder="vd mẹ hẹn cuối tuần trả lời"></textarea>' +
@@ -3312,7 +3315,7 @@ function pkqList() {
 function openSua(i) {
   var r = st.kho[i]; if (!r) return; var p = r.phieu, f = r.f || {}, t = r.tien || {}, o = st.opt;
   var ov = document.createElement('div'); ov.className = 'sheet'; ov.id = 'ov';
-  var tienHtml = '<div class="row2"><div><label>' + (p.giai ? 'Lệ phí' : 'Học phí thu') + ' *</label><input id="sp_st" class="tien" inputmode="numeric" data-tay="1" oninput="tongPT(\'sp\')"></div><div><label>Hình thức *</label>' + sel('sp_hinh', o.payMethod, '') + '</div></div><label>Ngày nhận tiền *</label><input id="sp_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">';
+  var tienHtml = '<div class="row2"><div><label>' + (p.giai ? 'Lệ phí' : 'Học phí thu') + ' *</label><input id="sp_st" class="tien" inputmode="numeric" data-tay="1" oninput="tongPT(\'sp\')"></div><div><label>Hình thức *</label>' + sel('sp_hinh', pmDs(o.payMethod), '') + '</div></div><label>Ngày nhận tiền *</label><input id="sp_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">';
   ov.innerHTML = '<div><h3 style="margin-top:0">Sửa phiếu ' + esc(p.so) + '<em>' + Core.tien(p.soTien) + 'đ</em></h3><div class="sub">' + esc(p.ten) + ' · ' + esc(p.sdt) + ' · ' + esc(p.loai) + '</div>' +
     '<div class="note">Sửa xong app vẽ lại phiếu <b>cùng số</b>, gửi lại phụ huynh. Dòng danh sách đăng kí chỉ tự sửa khi HCNS chưa xác nhận; đã xác nhận thì app báo để HCNS sửa tay.</div>' +
     (p.giai ? '<label>Giải / sự kiện</label><input value="' + esc(p.khoa) + '" disabled>' + tienHtml + nlHtml('sp') + '<label>Ghi chú (in lên phiếu)</label><textarea id="sp_gc" rows="2"></textarea>'
@@ -3355,7 +3358,7 @@ function giaiView() {
     '<label>Giải / sự kiện *</label><select id="g_gs" onchange="giaiChon()"><option value="">- chọn giải -</option>' + (g.ds || []).map(function (x) { return '<option>' + esc(x) + '</option>'; }).join('') + '<option value="__khac">Giải khác (tự gõ)...</option></select>' +
     '<input id="g_giai" class="hide" style="margin-top:6px" placeholder="vd JR CUP 2026">' +
     '<label>Nguồn</label><input id="g_nguon" placeholder="vd Học viên, Fanpage">' +
-    '<div class="row2"><div><label>Lệ phí *</label><input id="g_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1"></div><div><label>Hình thức *</label>' + sel('g_hinh', o.payMethod || g.payMethod, '') + '</div></div><div class="sub" id="g_gia"></div>' +
+    '<div class="row2"><div><label>Lệ phí *</label><input id="g_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1"></div><div><label>Hình thức *</label>' + sel('g_hinh', pmDs(o.payMethod, g.payMethod), '') + '</div></div><div class="sub" id="g_gia"></div>' +
     '<label>Ngày nhận tiền *</label><input id="g_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off" value="' + homNgay() + '">' +
     (lead ? '<label>Sale phụ trách *</label>' + sel('g_sale', o.sale, st.loc || '') : '') +
     nlHtml('g') + '<label>Ghi chú (in lên phiếu, ghi vào NOTE)</label><textarea id="g_gc" rows="2" placeholder="vd đội U11, size áo 140"></textarea>' +
