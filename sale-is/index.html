@@ -2400,6 +2400,7 @@ var DEMO = !API_URL || /[?&]demo=1/.test(location.search);
 var st = { brand: null, tab: 'homnay', me: null, thu: DEMO, opt: {}, hn: null, kq: [], q: '' };
 var $ = function (s) { return document.querySelector(s); };
 // 07/11/2026 chi Hoa: moi ngay tren app hien dd/mm/yy (file Sheet van ghi du nam)
+function ngDay(s) { return String(s == null ? '' : s); } // phieu thu: giu du nam dd/mm/yyyy (Linh HCNS 07/11/2026), khong rut yy
 function ngNgan(s) { return String(s == null ? '' : s).replace(/\b(\d{2})\/(\d{2})\/20(\d{2})\b/g, '$1/$2/$3'); }
 function esc(s) { return ngNgan(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
 
@@ -2693,7 +2694,7 @@ function fmtNgay(e, ev) { // go 061126 -> 06/11/26 (go 06112026 van nhan)
   else if (a.length === 2 && /^\d{3,6}$/.test(a[1])) v = a[0] + '/' + a[1].slice(0, 2) + '/' + a[1].slice(2);
   if (v !== e.value) e.value = v.slice(0, 10);
 }
-document.addEventListener('input', function (ev) { var t = ev.target; if (!t || !t.classList || !t.classList.contains('ngay')) return; fmtNgay(t, ev); if (/_bd$/.test(t.id)) ktTu(t.id.slice(0, -3)); }, true);
+document.addEventListener('input', function (ev) { var t = ev.target; if (!t || !t.classList || !t.classList.contains('ngay')) return; fmtNgay(t, ev); if (/_bd$/.test(t.id)) ktTu(t.id.slice(0, -3), 1); }, true);
 function saveNew(confirmSib) {
   var g = function (i) { var e = $('#' + i); return e ? e.value : ''; };
   var f = { ten: g('f_ten'), ngaySinh: dmy(g('f_ns')), truong: g('f_truong'), lop: g('f_lop'), nguon: g('f_nguon'), sdt: g('f_sdt'), phuHuynh: g('f_ph'), coSo: g('f_cs'), ngay: dmy(g('f_ngay')), gio: g('f_gio'), ketQua: g('f_kq'), sale: g('f_sale'), ghiChu: g('f_note'), chapNhanCungSdt: !!confirmSib };
@@ -2716,7 +2717,7 @@ function dkHtml(p, khoa, giua) {
     '<label>Khoá học *</label><select id="' + p + '_khs" onchange="khChon(\'' + p + '\')"><option value="">- chọn khoá học -</option>' + k.map(function (x) { return '<option' + (khoa && Core.N(khoa) === Core.N(x) ? ' selected' : '') + '>' + esc(x) + '</option>'; }).join('') + (khoa && !k.some(function (x) { return Core.N(x) === Core.N(khoa); }) ? '<option selected>' + esc(khoa) + '</option>' : '') + '<option value="__khac">Khoá khác (tự gõ)...</option></select>' +
     '<input id="' + p + '_kh" class="hide" style="margin-top:6px" value="' + esc(khoa || '') + '" placeholder="vd KH 3 THÁNG TUẦN 2B" oninput="ktTu(\'' + p + '\')">' +
     '<div class="sub" id="' + p + '_gia"></div>' + (giua || '') +
-    '<div class="row2"><div><label>Ngày bắt đầu học *</label><input id="' + p + '_bd" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off" onchange="ktTu(\'' + p + '\')"></div><div><label>Ngày kết thúc</label><input id="' + p + '_kt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off" oninput="this.dataset.tay=1"></div></div>' +
+    '<div class="row2"><div><label>Ngày bắt đầu học *</label><input id="' + p + '_bd" class="ngay" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" autocomplete="off" onchange="ktTu(\'' + p + '\', 1)"></div><div><label>Ngày kết thúc</label><input id="' + p + '_kt" class="ngay" inputmode="numeric" placeholder="dd/mm/yyyy" maxlength="10" autocomplete="off" oninput="this.dataset.tay=1"></div></div>' +
     '<div class="sub" id="' + p + '_kts">Ngày kết thúc tự nhảy theo khoá học và ngày bắt đầu.</div>' +
     '<div class="row2"><div><label>Học phí còn thiếu (nếu mới cọc)</label><input id="' + p + '_ct" class="tien" inputmode="numeric"></div><div><label>HP chuyển từ cơ sở khác</label><input id="' + p + '_hc" class="tien" inputmode="numeric"></div></div>' +
     '<div class="note" style="margin-top:10px"><b>Các khoản mua thêm</b> (in tách dòng trên phiếu thu, để trống nếu không mua)</div>' +
@@ -2747,10 +2748,11 @@ function giaTu(p) { // chon khoa -> tu dien hoc phi hay gap cua khoa do (sale go
   if (v && !hp.dataset.tay) { hp.value = Core.tien(v); hp.dataset.tu = 1; if (n) n.textContent = 'Đã tự điền học phí ' + Core.tien(v) + 'đ theo khoá (giá hay thu nhất). Sai thì sửa ở ô Học phí thu.'; } else if (n) n.textContent = v ? '' : (s && s.value ? 'Khoá này chưa có giá mẫu, nhập học phí bằng tay.' : '');
   tongPT(p);
 }
-function ktTu(p) { // tu nhay ngay ket thuc khi co khoa + ngay bat dau (sale sua tay thi thoi)
+function ktTu(p, doiBd) { // tu nhay ngay ket thuc khi co khoa + ngay bat dau. doiBd=1: sale vua DOI ngay bat dau -> tinh lai ngay ket thuc du da sua tay/dien san (07/11/2026, Linh HCNS)
   var s = $('#' + p + '_khs'), kh = s && s.value && s.value !== '__khac' ? s.value : ($('#' + p + '_kh') || {}).value, bd = ($('#' + p + '_bd') || {}).value, kt = $('#' + p + '_kt'), n = $('#' + p + '_kts');
   if (!kt) return; var v = Core.ketThucIso(kh, isoOf(bd));
-  if (v && !kt.dataset.tay) { kt.value = ngNgan(dmy(v)); if (n) n.textContent = 'Đã tự tính: ' + Core.thangKhoa(kh) + ' tháng từ ngày bắt đầu. Sửa tay được nếu khác.'; }
+  if (v && doiBd) delete kt.dataset.tay;
+  if (v && !kt.dataset.tay) { kt.value = dmy(v); if (n) n.textContent = 'Đã tự tính: ' + Core.thangKhoa(kh) + ' tháng từ ngày bắt đầu. Sửa tay được nếu khác.'; }
   else if (!v && n && kh && bd) n.textContent = 'Tên khoá không có số tháng, chọn ngày kết thúc bằng tay.';
 }
 function fmtTien(e) { // 1700000 -> 1.700.000 ngay khi go; chu nhu 500k thi de nguyen
@@ -2957,7 +2959,7 @@ function ptKey() { return 'appsale_pt_' + st.brand; }
 function dsPhieu() { try { return JSON.parse(localStorage.getItem(ptKey()) || '[]'); } catch (e) { return []; } }
 function luuPhieu(p) { var a = dsPhieu().filter(function (x) { return !(x.so === p.so && p.so !== 'XEM TRƯỚC') && !(x.ten === p.ten && x.ngay === p.ngay && x.soTien === p.soTien); }); a.unshift(p); try { localStorage.setItem(ptKey(), JSON.stringify(a.slice(0, 20))); } catch (e) {} }
 function veWrap(c, t, x, y, w, lh) { // viet chu xuong dong, tra ve y moi
-  var words = ngNgan(t || '').split(' '), line = '';
+  var words = ngDay(t || '').split(' '), line = '';
   words.forEach(function (wd) { var tt = line ? line + ' ' + wd : wd; if (c.measureText(tt).width > w && line) { c.fillText(line, x, y); y += lh; line = wd; } else line = tt; });
   if (line) { c.fillText(line, x, y); y += lh; } return y;
 }
@@ -2972,7 +2974,7 @@ function vePhieuNgang(p, done) {
     var M = 30, X = 76, INK = '#141b26', MUTE = '#6b7383', LINE = '#e3e7ee', HH = 200;
     var khoan = p.khoan && p.khoan.length ? p.khoan : [{ ten: 'Học phí', tien: p.soTien }];
     var LX = X, LW = 700, RX = X + LW + 60, RW = W - X - RX;
-    function txt(t, x, yy, font, color, al) { c.font = font; c.fillStyle = color; c.textAlign = al || 'left'; c.fillText(ngNgan(t), x, yy); c.textAlign = 'left'; }
+    function txt(t, x, yy, font, color, al) { c.font = font; c.fillStyle = color; c.textAlign = al || 'left'; c.fillText(ngDay(t), x, yy); c.textAlign = 'left'; }
     function cap(t, x, y) { c.fillStyle = B.mau; rr(c, x, y - 24, 7, 30, 4); c.fill(); txt(t, x + 20, y, '800 25px ' + F, B.mau); return y + 44; }
     function o(lb, v, x, y, w) { txt(lb, x, y, '500 21px ' + F, MUTE); c.font = '700 26px ' + F; c.fillStyle = INK; return veWrap(c, v || '-', x, y + 34, w, 34) + 14; }
     function hai(y, l1, v1, l2, v2, r) { r = r || 0.5; var a = o(l1, v1, LX + 24, y, LW * r - 34), b = o(l2, v2, LX + LW * r + 10, y, LW * (1 - r) - 34); return Math.max(a, b); }
@@ -3090,7 +3092,7 @@ function vePhieuDoc(p, done) {
   img.onload = img.onerror = function () {
     var M = 34, X = 84, CW = W - 2 * X, INK = '#141b26', MUTE = '#6b7383', LINE = '#e3e7ee', y;
     var khoan = p.khoan && p.khoan.length ? p.khoan : [{ ten: 'Học phí', tien: p.soTien }];
-    function txt(t, x, yy, font, color, al) { c.font = font; c.fillStyle = color; c.textAlign = al || 'left'; c.fillText(ngNgan(t), x, yy); c.textAlign = 'left'; }
+    function txt(t, x, yy, font, color, al) { c.font = font; c.fillStyle = color; c.textAlign = al || 'left'; c.fillText(ngDay(t), x, yy); c.textAlign = 'left'; }
     function cap(t) { c.fillStyle = B.mau; rr(c, X, y - 26, 8, 32, 4); c.fill(); txt(t, X + 22, y, '800 27px ' + F, B.mau); y += 46; }
     function o(lb, v, x, w) { txt(lb, x, y, '500 24px ' + F, MUTE); c.font = '700 30px ' + F; c.fillStyle = INK; return veWrap(c, v || '-', x, y + 38, w, 38); }
     function hai(l1, v1, l2, v2) { var y0 = y, a1 = o(l1, v1, X + 28, CW / 2 - 40); y = y0; var a2 = o(l2, v2, X + CW / 2 + 14, CW / 2 - 40); y = Math.max(a1, a2) + 18; }
