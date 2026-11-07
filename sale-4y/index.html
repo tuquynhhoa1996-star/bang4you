@@ -1066,7 +1066,11 @@ var Core = (function () {
   // ---------- THONG KE HIEU QUA SALE (07/11/2026 chi Hoa: do ca khoi luong viec va ket qua, chua co chi tieu, do 1 thang lam moc) ----------
   // Ngay trong Sheet bi ghi de (NGAY GOI chi giu lan cuoi) nen dem them cac dong NOTE co dau "dd/mm:" de biet ngay nao co cham.
   // Tra ve { ngay:[...], sale:[{ten, ngay:{'dd/mm/yyyy':{...}}, tong:{...}}], tong:{...} }
-  C.TK_CHI_SO = ['data', 'cham126', 'cham326', 'hocThu', 'denHT', 'chotHT', 'chot', 'tienChot', 'taiKi', 'tienTaiKi'];
+  C.TK_CHI_SO = ['data', 'cham126', 'cham326', 'hocThu', 'denHT', 'chotHT', 'chot', 'tienChot', 'taiKi', 'tienTaiKi',
+    // 07/11/2026 chi Hoa: them cham soc hoc vien dang hoc (file 2.26 SALE CHAM SOC, nut Ghi tren bang dieu hanh) va giai dau (tab DATA SU KIEN)
+    'chamHV', 'hvGoiDuoc', 'hvKhongNghe', 'hvHetBuoi', 'hvVang', 'hvHetKhoa', 'hvKhongDeu', 'giaiGoi', 'giai', 'tienGiai'];
+  C.CS_LOAI = { sap_het_buoi: 'hvHetBuoi', vang_lau: 'hvVang', sap_het_khoa: 'hvHetKhoa', khong_deu: 'hvKhongDeu' };
+  C.tenGhiCS = function (t) { t = T(t); var b = t.replace(/^(chị|chi|anh|em|cô|thầy|c|a)\s+/i, ''); return b || t; };
   function tkRong() { var o = {}; C.TK_CHI_SO.forEach(function (k) { o[k] = 0; }); return o; }
   function tkCong(a, b) { C.TK_CHI_SO.forEach(function (k) { a[k] += b[k] || 0; }); return a; }
   function ngayNote(note, yr, tn) { // cac ngay co dau "dd/mm:" trong NOTE (khong lay ngay tuong lai: thuong la hen goi lai)
@@ -1078,8 +1082,11 @@ var Core = (function () {
     return out;
   }
   function soTienO(s) { var n = +String(s || '').replace(/[^\d]/g, ''); return isFinite(n) ? n : 0; }
+  C.tkViec = function (x) { return (x.data || 0) + (x.cham126 || 0) + (x.cham326 || 0) + (x.chamHV || 0) + (x.giaiGoi || 0) + (x.hocThu || 0); }; // tong luot viec trong ngay
   C.tkRong = tkRong; C.tkCong = tkCong; C.noDauTen = function (s) { return noDau(s); };
-  C.thongKe = function (brand, data, reten, user, tuStr, denStr, today) {
+  // them (tuy chon): { cs: dong tab CHĂM SÓC file 2.26 SALE CHĂM SÓC (dong 0 la tieu de), sk: tab DATA SỰ KIỆN file 1.26, ten: ham doi 'Người ghi' -> ten sale }
+  C.thongKe = function (brand, data, reten, user, tuStr, denStr, today, them) {
+    them = them || {};
     var cfg = C.BRANDS[brand], td = C.parseDate(today), tn = C.dayNum(td), yr = td.y;
     var a = C.dayNum(C.parseDate(tuStr) || td), b = Math.min(C.dayNum(C.parseDate(denStr) || td), tn);
     if (a > b) { var t0 = a; a = b; b = t0; }
@@ -1125,6 +1132,38 @@ var Core = (function () {
         if (trong(p2) && (N(cell(q, col(hr, rc.close))) === N(DONE_CLOSE) || t2 > 0)) { var q3 = o(s2, p2); q3.taiKi++; q3.tienTaiKi += t2; }
       }
     }
+    if (them.cs && them.cs.length > 1) { // cham soc hoc vien dang hoc: 1 hoc vien tinh 1 lan/ngay/sale, ket qua lay lan ghi cuoi trong ngay
+      var hc = them.cs[0].map(function (x) { return N(x); }), ci = function (n, d0) { var j = hc.indexOf(N(n)); return j >= 0 ? j : d0; };
+      var iT = ci('Thời gian', 0), iN = ci('Người ghi', 1), iL = ci('Loại việc', 3), iH = ci('Học viên', 4), iS = ci('SĐT', 6), iTT = ci('Tình trạng', 7), iK = ci('Mã (máy dùng, đừng sửa)', 9);
+      var gap = {};
+      for (var c2 = 1; c2 < them.cs.length; c2++) {
+        var w = them.cs[c2], tg = T(w[iT]), mm = /^(\d{4})-(\d{1,2})-(\d{1,2})/.exec(tg) || /^(\d{1,2})\/(\d{1,2})\/(\d{4})/.exec(tg);
+        if (!mm) continue;
+        var dd2 = mm[1].length === 4 ? chk(+mm[1], +mm[2], +mm[3]) : chk(+mm[3], +mm[2], +mm[1]); if (!dd2) continue;
+        var dn2 = C.dayNum(dd2); if (!trong(dn2)) continue;
+        var sl = them.ten ? them.ten(w[iN]) : C.tenGhiCS(w[iN]); if (!canSee(user, sl)) continue;
+        var key = noDau(sl) + '|' + dn2 + '|' + (T(w[iK]) || noDau(w[iH]) + C.normPhone(w[iS]));
+        gap[key] = { sl: sl, dn: dn2, loai: T(w[iL]), tt: N(w[iTT]) };
+      }
+      Object.keys(gap).forEach(function (kk) {
+        var g0 = gap[kk], q4 = o(g0.sl, g0.dn); q4.chamHV++;
+        if (g0.tt === N('Không nghe máy') || g0.tt === N('Hẹn gọi lại')) q4.hvKhongNghe++;
+        else if (g0.tt !== N('Ghi chú')) q4.hvGoiDuoc++;
+        var lk = C.CS_LOAI[g0.loai]; if (lk) q4[lk]++;
+      });
+    }
+    if (them.sk && them.sk.length > 1) { // giai dau: goi moi (NGAY GOI / NOTE dd/mm) va dang ki (ngay nhan tien)
+      var kc = C.SK[brand], hs = C.header(them.sk[0]);
+      for (var s3 = 1; s3 < them.sk.length; s3++) {
+        var z = them.sk[s3]; if (cell(z, col(hs, kc.name)) === '' && cell(z, col(hs, kc.phone)) === '') continue;
+        var sz = cell(z, col(hs, kc.sale)); if (!canSee(user, sz)) continue;
+        var gg = {}, vg = dn(cell(z, col(hs, kc.call))); if (trong(vg)) gg[vg] = 1;
+        var nt3 = ngayNote(raw(z, col(hs, kc.note)), yr, tn); Object.keys(nt3).forEach(function (v) { if (trong(+v)) gg[v] = 1; });
+        Object.keys(gg).forEach(function (v) { o(sz, v).giaiGoi++; });
+        var pz = dn(cell(z, col(hs, kc.payDate))), tz = soTienO(cell(z, col(hs, kc.amount)));
+        if (trong(pz) && (N(cell(z, col(hs, kc.close))) === N(C.SK_CLOSE) || tz > 0)) { var q5 = o(sz, pz); q5.giai++; q5.tienGiai += tz; }
+      }
+    }
     var ngay = []; for (var n = b; n >= a; n--) ngay.push(n);
     var tongAll = tkRong(), out = [];
     Object.keys(S).forEach(function (k) {
@@ -1133,7 +1172,7 @@ var Core = (function () {
       var co = C.TK_CHI_SO.some(function (c) { return tg[c]; }); if (!co) return;
       tkCong(tongAll, tg); out.push({ ten: ten, ngay: nd, tong: tg });
     });
-    out.sort(function (x, y) { return (y.tong.tienChot + y.tong.tienTaiKi) - (x.tong.tienChot + x.tong.tienTaiKi) || (y.tong.cham126 + y.tong.cham326) - (x.tong.cham126 + x.tong.cham326); });
+    out.sort(function (x, y) { return C.tkViec(y.tong) - C.tkViec(x.tong) || (y.tong.tienChot + y.tong.tienTaiKi) - (x.tong.tienChot + x.tong.tienTaiKi); }); // xep theo tong khoi luong viec
     return { brand: brand, tu: C.fmtDate(C.addDays({ y: 1970, m: 1, d: 1 }, a)), den: C.fmtDate(C.addDays({ y: 1970, m: 1, d: 1 }, b)), soNgay: b - a + 1, sale: out, tong: tongAll };
   };
 
@@ -2428,7 +2467,7 @@ function demoCall(p) {
         }
         if (p.act === 'me') return ok({ me: st.me, thu: true });
         if (u && u.leader && p.loc) u = { ten: u.ten, saleName: p.loc, leader: false };
-        if (p.act === 'thongKe') { var tk0 = Core.thongKe(b, d.data, d.reten, u, p.tu || today, p.den || today, today); tk0.ton = Core.homNay(b, d.data, d.reten, u, today).dem; return ok(tk0); }
+        if (p.act === 'thongKe') { var tk0 = Core.thongKe(b, d.data, d.reten, u, p.tu || today, p.den || today, today, { sk: d.sk, cs: d.cs || [], ten: d.tenCS || Core.tenGhiCS }); tk0.ton = Core.homNay(b, d.data, d.reten, u, today).dem; return ok(tk0); }
         if (p.act === 'homNay') { var hn0 = Core.homNay(b, d.data, d.reten, u, today), tn0 = Core.dayNum(Core.parseDate(today)); hn0.baoPhi = d.bp.filter(function (r) { return r.tt === 'Chờ chuyển'; }).map(function (r) { var tu = tn0 - Core.dayNum(Core.parseDate(r.today)), qua = tu >= Core.BAO_PHI_NHAC_NGAY; return { bp: r.so, kind: r.kind, row: r.row, x: r.x, f: r.f, hp: r.hp, phieu: r.phieu, ten: r.phieu.ten, sdt: r.src.sdt, coSo: r.src.coSo, sale: r.src.sale, soTien: r.phieu.soTien, khoa: r.phieu.khoa, ngayLap: r.today, tuoi: tu, qua: qua, lyDo: qua ? 'Gửi ' + tu + ' ngày, chưa chuyển: gọi nhắc phụ huynh' : (tu ? 'Gửi ' + tu + ' ngày trước' : 'Gửi hôm nay') }; }); hn0.dem.baoPhi = hn0.baoPhi.length; var tre0 = hn0.baoPhi.filter(function (x) { return x.qua; }).length; if (tre0) hn0.canhBao.push(tre0 + ' phiếu báo học phí đã gửi từ ' + Core.BAO_PHI_NHAC_NGAY + ' ngày trở lên mà phụ huynh chưa chuyển. Xem mục Chờ PH chuyển và gọi nhắc.'); return ok(hn0); }
         if (p.act === 'baoPhi') { var rw0 = p.kind === 'reten' ? d.reten : d.data, sr0 = Core.dkNguon(b, p.kind, rw0, Number(p.row)); if (p.kind === 'reten') sr0.loai = 'Retention'; var e0 = Core.kiemPhieuThu(b, p.dk); if (!p.dk.khoaHoc) e0.push('Chọn khoá học.'); if (!Core.parseDate(p.dk.ngayBatDau || '')) e0.push('Điền ngày bắt đầu học.'); if (!Core.soTien(p.hp)) e0.push('Điền học phí cần đóng.'); if (!sr0.ten) e0.push('Khách chưa có tên bé: điền tên bé, bấm Lưu, rồi mới tạo phiếu báo phí.'); if (e0.length) return ok({ ok: false, loi: e0 });
           var sl0 = u.saleName || sr0.sale, tk0 = Core.chonTaiKhoan(b, DEMO_TK, sl0, sr0.coSo); if (!tk0) return ok({ ok: false, loi: ['Chưa có tài khoản nhận tiền cho sale ' + sl0 + '. Nhắn chị Hoa cập nhật rồi tạo lại phiếu.'] });
@@ -2588,9 +2627,12 @@ function taiTk() {
 function trieu(n) { n = +n || 0; return n >= 1e6 ? (Math.round(n / 1e5) / 10).toString().replace('.', ',') + 'tr' : n ? Core.tien(n) : '0'; }
 function tyLe(a, b) { return b ? Math.round(a * 100 / b) + '%' : '-'; }
 function tkDong(ten, x, cls) {
-  return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + esc(ten) + '</td><td>' + x.data + '</td><td>' + x.cham126 + '</td><td>' + x.cham326 + '</td><td>' + x.denHT + '/' + x.hocThu + '</td><td>' + x.chot + '</td><td>' + tyLe(x.chotHT, x.denHT) + '</td><td>' + x.taiKi + '</td><td>' + trieu(x.tienChot + x.tienTaiKi) + '</td></tr>';
+  var c = [C0(Core.tkViec(x)), x.data, x.cham126, x.denHT + '/' + x.hocThu, x.cham326, x.chamHV || 0, x.giaiGoi || 0, x.chot, tyLe(x.chotHT, x.denHT), x.taiKi, x.giai || 0, trieu(x.tienChot + x.tienTaiKi), trieu(x.tienGiai || 0)];
+  return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + esc(ten) + '</td><td>' + c.join('</td><td>') + '</td></tr>';
 }
-var TK_HEAD = '<thead><tr><th>Sale</th><th>Data mới</th><th>Chăm KH mới</th><th>Chăm tái tục</th><th>Đến/hẹn HT</th><th>Chốt mới</th><th>Tỉ lệ chốt</th><th>Tái kí</th><th>Tiền thu</th></tr></thead>';
+function C0(n) { return '<b>' + n + '</b>'; }
+var TK_HEAD = '<thead><tr><th>Sale</th><th>Tổng lượt việc</th><th>Data mới</th><th>Chăm KH mới</th><th>Đến/hẹn HT</th><th>Gọi tái tục</th><th>Chăm HV đang học</th><th>Gọi mời giải</th><th>Chốt mới</th><th>Tỉ lệ chốt</th><th>Tái kí</th><th>ĐK giải</th><th>Tiền học phí</th><th>Lệ phí giải</th></tr></thead>';
+function tkO(n, t) { return '<div><b>' + n + '</b><span>' + t + '</span></div>'; }
 function hqView() {
   var s = locBar() + '<h3 style="margin:4px 0 8px">Hiệu quả làm việc</h3><div class="locs">' + [['homnay', 'Hôm nay'], ['homqua', 'Hôm qua'], ['7ngay', '7 ngày'], ['thang', 'Tháng này']].map(function (t) { return '<button class="' + (st.tkK === t[0] ? 'on' : '') + '" onclick="tkChon(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>';
   var k = st.tk;
@@ -2598,13 +2640,19 @@ function hqView() {
   if (k.loi) return s + '<div class="err">' + esc(k.loi) + '</div>';
   var g = k.tong, tien = g.tienChot + g.tienTaiKi;
   s += '<div class="sub" style="margin-bottom:8px">' + (k.tu === k.den ? 'Ngày ' + esc(k.tu) : 'Từ ' + esc(k.tu) + ' đến ' + esc(k.den)) + (st.loc ? ' · ' + esc(st.loc) : '') + '</div>';
-  s += '<div class="tkh"><b>Khối lượng việc</b></div><div class="tkg">' +
-    '<div><b>' + g.data + '</b><span>Data mới nhập</span></div><div><b>' + g.cham126 + '</b><span>Khách mới đã gọi, chăm</span></div><div><b>' + g.cham326 + '</b><span>Học viên tái tục đã gọi</span></div><div><b>' + g.denHT + '/' + g.hocThu + '</b><span>Bé đến / hẹn học thử</span></div></div>';
+  if (k.thieu) s += '<div class="err">Chưa đọc được phần ' + esc(k.thieu.join(', ')) + ', số dưới đây đang thiếu phần đó.</div>';
+  s += '<div class="tkh"><b>Khối lượng việc</b> · tổng ' + Core.tkViec(g) + ' lượt</div><div class="tkg">' +
+    tkO(g.data, 'Data mới nhập') + tkO(g.cham126, 'Khách mới đã gọi, chăm') + tkO(g.denHT + '/' + g.hocThu, 'Bé đến / hẹn học thử') +
+    tkO(g.cham326, 'Học viên tái tục đã gọi') + tkO(g.chamHV, 'Học viên đang học đã chăm sóc') + tkO(g.giaiGoi, 'Lượt gọi mời giải đấu') + '</div>';
+  if (g.chamHV) s += '<div class="tkh"><b>Chăm sóc học viên đang học</b> · ' + g.chamHV + ' bé</div><div class="tkg">' +
+    tkO(g.hvGoiDuoc, 'Đã gọi được, đã xử lý') + tkO(g.hvKhongNghe, 'Không nghe máy, hẹn gọi lại') + tkO(g.hvHetBuoi, 'Sắp hết buổi') +
+    tkO(g.hvVang, 'Vắng lâu') + tkO(g.hvHetKhoa, 'Sắp hết khoá') + tkO(g.hvKhongDeu, 'Đi học không đều') + '</div>';
   s += '<div class="tkh"><b>Kết quả</b></div><div class="tkg">' +
-    '<div><b>' + g.chot + '</b><span>Chốt khách mới (thu ' + trieu(g.tienChot) + ')</span></div><div><b>' + tyLe(g.chotHT, g.denHT) + '</b><span>Bé đến học thử đã chốt (' + g.chotHT + '/' + g.denHT + ')</span></div><div><b>' + g.taiKi + '</b><span>Tái kí (' + trieu(g.tienTaiKi) + ')</span></div><div><b>' + trieu(tien) + '</b><span>Tổng tiền thu</span></div></div>';
-  if (k.ton) s += '<div class="tkh"><b>Việc còn tồn lúc này</b></div><div class="tkg"><div><b>' + (k.ton.canGoi || 0) + '</b><span>Cần gọi</span></div><div><b>' + (k.ton.hocThuChuaChot || 0) + '</b><span>Học thử xong, chưa chốt</span></div><div><b>' + (k.ton.taiTuc || 0) + '</b><span>Tái tục sắp hạn</span></div></div>';
+    tkO(g.chot, 'Chốt khách mới (thu ' + trieu(g.tienChot) + ')') + tkO(tyLe(g.chotHT, g.denHT), 'Bé đến học thử đã chốt (' + g.chotHT + '/' + g.denHT + ')') +
+    tkO(g.taiKi, 'Tái kí (' + trieu(g.tienTaiKi) + ')') + tkO(trieu(tien), 'Tổng tiền học phí') + tkO(g.giai, 'Bé đăng kí giải (lệ phí ' + trieu(g.tienGiai) + ')') + '</div>';
+  if (k.ton) s += '<div class="tkh"><b>Việc còn tồn lúc này</b></div><div class="tkg">' + tkO(k.ton.canGoi || 0, 'Cần gọi') + tkO(k.ton.hocThuChuaChot || 0, 'Học thử xong, chưa chốt') + tkO(k.ton.taiTuc || 0, 'Tái tục sắp hạn') + '</div>';
   if (k.sale.length > 1 || !st.loc) {
-    s += '<div class="tkh"><b>Theo sale</b></div><div class="tkw"><table class="tk">' + TK_HEAD + '<tbody>' + tkDong('TỔNG', g, 'tg') + k.sale.map(function (x) { return tkDong(x.ten, x.tong); }).join('') + '</tbody></table></div>';
+    s += '<div class="tkh"><b>Theo sale</b> · xếp theo tổng lượt việc</div><div class="tkw"><table class="tk">' + TK_HEAD + '<tbody>' + tkDong('TỔNG', g, 'tg') + k.sale.map(function (x) { return tkDong(x.ten, x.tong); }).join('') + '</tbody></table></div>';
   }
   if (k.soNgay > 1) {
     var nd = {}; k.sale.forEach(function (x) { Object.keys(x.ngay).forEach(function (n) { nd[n] = Core.tkCong(nd[n] || Core.tkRong(), x.ngay[n]); }); });
@@ -2612,7 +2660,7 @@ function hqView() {
     s += '<div class="tkh"><b>Theo ngày</b></div><div class="tkw"><table class="tk">' + TK_HEAD.replace('<th>Sale</th>', '<th>Ngày</th>') + '<tbody>' + ds.map(function (n) { return tkDong(n, nd[n]); }).join('') + '</tbody></table></div>';
   }
   if (!k.sale.length) s += '<div class="empty">Chưa có việc nào được ghi nhận trong khoảng này.</div>';
-  s += '<div class="sub">Cách đếm: "Chăm" là khách có ngày gọi, ngày chăm sóc hoặc ghi chú "dd/mm:" đúng ngày đó (1 khách tính 1 lần/ngày). Học thử theo ngày học thử. Chốt và tái kí theo ngày nhận tiền (lượt thu thêm chỉ cộng tiền). Tỉ lệ chốt: trong số bé đến học thử trong khoảng, bao nhiêu bé đã chốt. Từ 07/11/2026 app chụp số mỗi ngày, nên số những ngày trước 07/11 có thể thiếu do ngày gọi trong Sheet bị ghi đè. Chưa có chỉ tiêu: dùng 1 tháng số này làm mốc.</div>';
+  s += '<div class="sub">Cách đếm: "Chăm KH mới", "Gọi tái tục", "Gọi mời giải" là khách có ngày gọi, ngày chăm sóc hoặc ghi chú "dd/mm:" đúng ngày đó trong file 1.26, 3.26 và tab DATA SỰ KIỆN (1 khách tính 1 lần/ngày). "Chăm HV đang học" lấy từ nút Ghi ở mục Việc cần xử lý của bảng điều hành (file 2.26 SALE CHĂM SÓC, có từ 05/11/2026), 1 bé tính 1 lần/ngày. Tổng lượt việc = data mới + chăm KH mới + hẹn học thử + gọi tái tục + chăm HV + gọi mời giải. Chốt, tái kí, đăng kí giải theo ngày nhận tiền. Tiền học phí không gồm lệ phí giải. Từ 07/11/2026 app chụp số mỗi ngày, nên số những ngày trước 07/11 có thể thiếu do ngày gọi trong Sheet bị ghi đè. Chưa có chỉ tiêu: dùng 1 tháng số này làm mốc.</div>';
   s += '<div class="btns" style="margin-top:10px"><button onclick="setTab(\'homnay\')">← Về Hôm nay</button></div>';
   return s;
 }
