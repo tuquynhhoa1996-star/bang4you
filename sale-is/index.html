@@ -27,6 +27,7 @@ h3 em{font-style:normal;background:#0b3d91;color:#fff;border-radius:10px;padding
 nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid #dde;display:flex;padding-bottom:env(safe-area-inset-bottom)}
 nav button{flex:1;padding:12px 1px;border:0;background:none;font-weight:600;color:#667;font-size:12px;white-space:nowrap;min-width:0}nav button.on{color:#0b3d91;border-top:3px solid #0b3d91;margin-top:-1px}
 label{display:block;font-size:13px;color:#445;margin:10px 0 3px}
+label.daGoi{display:flex;align-items:center;gap:10px;margin-top:16px;padding:12px;border:2px solid #0b3d91;border-radius:10px;font-size:16px;font-weight:700;color:#0b3d91;background:#e8efff}label.daGoi input{width:22px;height:22px;margin:0}
 input,select,textarea{width:100%;max-width:100%;box-sizing:border-box;padding:10px;border:1px solid #cfd6e2;border-radius:9px;font:inherit;background:#fff}
 input[type=date]{-webkit-appearance:none;appearance:none;min-height:44px;display:block}
 .btnBP{width:100%;margin:10px 0 2px;padding:12px;border:2px solid #0b3d91;border-radius:11px;background:#fff;color:#0b3d91;font:inherit;font-weight:800;font-size:15px}
@@ -83,6 +84,7 @@ var Core = (function () {
 
   // ---------- tien ich ----------
   function N(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().toUpperCase(); }
+  C.chuaGoiDuoc = function (lh) { return /^CHƯA LIÊN HỆ|^KHÔNG NGHE|^THUÊ BAO|^SAI SỐ/.test(N(lh)); };
   function T(s) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim(); }
   function noDau(s) { return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/g, 'd').replace(/Đ/g, 'D').toLowerCase().replace(/\s+/g, ' ').trim(); }
   C.N = N; C.noDau = noDau;
@@ -715,7 +717,8 @@ var Core = (function () {
     // ngay goi / cham soc: dat hom nay khi sale co thao tac lien he
     if (edits.length || ch.daGoi) {
       var cc = col(h, d.care);
-      if (ch.daGoi || T(ch.lienHe) || T(ch.ghiNote)) {
+      // 10/11/2026 chi Hoa: chua goi duoc thi sale chi ghi chu, khong tich "Da goi" -> khong dong dau ngay goi, be van nam o Can goi de goi lan sau
+      if (ch.daGoi || (T(ch.lienHe) && !C.chuaGoiDuoc(ch.lienHe)) || T(ch.chot) || T(ch.hocThu) || T(ch.ngayHocThu)) {
         if (cc >= 0 && cell(r, cc) !== C.fmtDate(td)) { edits.push({ row: rowNo, col: cc + 1, value: C.fmtDate(td), name: d.care, old: cell(r, cc) }); log.push('Ngày chăm sóc: ' + C.fmtDate(td)); }
         if (col(h, d.call) >= 0 && cell(r, col(h, d.call)) === '') { edits.push({ row: rowNo, col: col(h, d.call) + 1, value: C.fmtDate(td), name: d.call, old: '' }); log.push('Ngày gọi: ' + C.fmtDate(td)); }
       }
@@ -809,7 +812,7 @@ var Core = (function () {
       if (nc < 0) errs.push('File 3.26 không có cột NOTE.');
       else { var oldN = raw(r, nc).replace(/\s+$/, ''), add = stamp(td, T(ch.ghiNote), user.ten); edits.push({ row: rowNo, col: nc + 1, value: oldN ? oldN + '\n' + add : add, name: 'NOTE', old: oldN }); log.push('Note: + ' + add); }
     }
-    if (ch.daGoi || lh || T(ch.ghiNote) || cl) {
+    if (ch.daGoi || (lh && !C.chuaGoiDuoc(lh)) || cl) { // 10/11/2026: chi ghi chu, khong tich "Da goi" thi khong dong dau ngay goi
       var cc = col(h, rc.care), fc = col(h, rc.firstCall), today2 = C.fmtDate(td);
       if (cc >= 0 && cell(r, cc) !== today2) { edits.push({ row: rowNo, col: cc + 1, value: today2, name: rc.care, old: cell(r, cc) }); log.push('Ngày gọi chăm sóc: ' + today2); }
       if (fc >= 0 && cell(r, fc) === '') { edits.push({ row: rowNo, col: fc + 1, value: today2, name: rc.firstCall, old: '' }); log.push('Ngày gọi đầu tiên: ' + today2); }
@@ -3077,7 +3080,6 @@ function openUpd(n) {
     (x.ten ? '' : '<label>Tên học sinh (khách chưa có tên)</label><input id="u_ten" placeholder="Họ và tên bé" autocomplete="off">') +
     (claim ? '<label><input type="checkbox" id="u_nhan" checked style="width:auto"> Nhận khách này về tên mình</label>' : '') +
     '<button class="btnThu" onclick="chotThu(\'u\')">Chốt đăng kí - thu tiền, lập phiếu thu</button>' +
-    '<div class="btns"><button id="u_goi" class="">Đánh dấu đã gọi</button></div>' +
     '<label>Tình trạng liên hệ</label>' + sel('u_lh', o.lienHe, '', '- giữ nguyên -') +
     '<label>Tình trạng học thử</label>' + sel('u_ht', o.hocThu, '', '- giữ nguyên -') +
     '<label>Đặt/đổi ngày học thử</label><input id="u_ngay" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">' +
@@ -3090,11 +3092,11 @@ function openUpd(n) {
     '<label>Trường học</label><input id="u_truong" placeholder="' + esc(x.truong || '') + '">' +
     '<label>Sửa cơ sở</label>' + sel('u_cs', o.coSo, '', '- giữ nguyên -') +
     (x.nguon ? '' : '<label>Nguồn data (khách chưa có nguồn)</label>' + sel('u_nguon', o.nguon, '')) +
+    '<label class="daGoi"><input type="checkbox" id="u_goi"> Đã gọi được cho phụ huynh</label><div class="sub">Chưa gọi được thì không tích, ghi chú lại (vd "thuê bao, gọi lại tối") rồi bấm Lưu. Bé vẫn nằm ở mục Cần gọi để gọi lần sau.</div>' +
     '<div id="ue"></div><div class="btns"><button onclick="closeUpd()">Đóng</button><button class="pri" onclick="saveUpd(' + n + ')">Lưu</button></div></div>';
   document.body.appendChild(ov);
   var chg = function () { var c = $('#u_chot').value, ok = /^đã thành công/i.test(c); $('#u_tien').className = ok ? '' : 'hide'; $('#u_ly').className = /^không thành công/i.test(c) ? '' : 'hide'; if (ok) { if (!$('#u_nt').value) $('#u_nt').value = homNgay(); if (!$('#ud_bd').value) $('#ud_bd').value = homNgay(); giaTu('ud'); ktTu('ud'); } };
   $('#u_chot').onchange = chg;
-  $('#u_goi').onclick = function () { this.className = this.className ? '' : 'pri'; };
 }
 function closeUpd() { var o = $('#ov'); if (o) o.remove(); }
 // Luu nen: dong form ngay, ghi Sheet o nen. Mat mang thi tu thu lai; Sheet bao loi thi mo lai form voi dung chu da nhap.
@@ -3134,7 +3136,7 @@ function loiNen(mo, n, ten, form, loi, oLoi) {
 window.addEventListener('beforeunload', function (e) { if (dangLuu > 0) { e.preventDefault(); e.returnValue = 'Đang lưu, chờ chút'; return e.returnValue; } });
 function saveUpd(n) {
   var x = findRow(n), g = function (i) { var e = $('#' + i); return e ? e.value : ''; };
-  var ch = { ten: g('u_ten').trim(), lienHe: g('u_lh'), hocThu: g('u_ht'), ngayHocThu: dmy(g('u_ngay')), chot: g('u_chot'), soTien: g('u_st'), hinhThucTien: g('u_hinh'), ngayTien: dmy(g('u_nt')), lyDo: g('u_lydo'), ghiNote: g('u_note'), coSo: g('u_cs'), ngaySinh: dmy(g('u_ns')), lop: g('u_lop'), truong: g('u_truong'), nguon: g('u_nguon'), daGoi: $('#u_goi').className.indexOf('pri') >= 0, nhanKhach: !!($('#u_nhan') && $('#u_nhan').checked) };
+  var ch = { ten: g('u_ten').trim(), lienHe: g('u_lh'), hocThu: g('u_ht'), ngayHocThu: dmy(g('u_ngay')), chot: g('u_chot'), soTien: g('u_st'), hinhThucTien: g('u_hinh'), ngayTien: dmy(g('u_nt')), lyDo: g('u_lydo'), ghiNote: g('u_note'), coSo: g('u_cs'), ngaySinh: dmy(g('u_ns')), lop: g('u_lop'), truong: g('u_truong'), nguon: g('u_nguon'), daGoi: $('#u_goi').checked, nhanKhach: !!($('#u_nhan') && $('#u_nhan').checked) };
   // 07/11/2026 chi Hoa: dat lich hoc thu thi phai du thong tin (kiem truoc tren may, server kiem lai)
   if (/^hẹn học thử$/i.test(ch.hocThu.trim()) || ch.ngayHocThu) {
     var th = Core.thieuHocThu({ ten: ch.ten || x.ten, sdt: x.sdt, ngaySinh: ch.ngaySinh || x.ngaySinh, truong: ch.truong || x.truong, coSo: ch.coSo || x.coSo, ngayHocThu: ch.ngayHocThu || (x.ngayHocThu || []).join(','), nguon: ch.nguon || x.nguon });
@@ -3159,7 +3161,6 @@ function openTT(n) {
     '<div class="sub">Tái tục · ' + esc(x.khoa) + ' · hạn ' + esc(x.han || 'chưa có') + '</div>' +
     '<div class="sub">Hiện tại: ' + esc([x.lienHe, x.chot, x.trangThai].filter(Boolean).join(' · ') || 'chưa có trạng thái') + '</div>' +
     (x.note ? '<div class="note">' + esc(x.note) + '</div>' : '') +
-    '<div class="btns"><button id="t_goi">Đánh dấu đã gọi</button></div>' +
     '<label>Tình trạng liên hệ</label>' + sel('t_lh', o.lienHe, '', '- giữ nguyên -') +
     '<button class="btnThu" onclick="chotThu(\'t\')">Thu tiền, lập phiếu thu (tái tục, tái kí trước hạn, bổ sung học phí)</button>' +
     '<label>Chốt sale</label>' + sel('t_chot', o.chot, '', '- giữ nguyên -') +
@@ -3167,15 +3168,15 @@ function openTT(n) {
     '<div id="t_ly" class="hide"><label>Lý do không retention *</label>' + sel('t_lydo', o.lyDo, '') + '</div>' +
     '<div class="row2"><div><label>Tình trạng học viên</label>' + sel('t_tt', o.trangThai, '', '- giữ nguyên -') + '</div><div><label>Hình thức học</label>' + sel('t_hf', o.hinhThuc, '', '- giữ nguyên -') + '</div></div>' +
     '<label>Ghi chú thêm (nối thêm, không xoá chữ cũ)</label><textarea id="t_note" placeholder="vd mẹ hẹn cuối tuần trả lời"></textarea>' +
+    '<label class="daGoi"><input type="checkbox" id="t_goi"> Đã gọi được cho phụ huynh</label><div class="sub">Chưa gọi được thì không tích, ghi chú lại (vd "thuê bao, gọi lại tối") rồi bấm Lưu. Bé vẫn nằm ở mục Tái tục để gọi lần sau.</div>' +
     '<div id="te2"></div><div class="btns"><button onclick="closeUpd()">Đóng</button><button class="pri" onclick="saveTT(' + n + ')">Lưu vào 3.26</button></div></div>';
   document.body.appendChild(ov);
   var chg = function () { var c = $('#t_chot').value; $('#t_tien').className = /^đã thành công/i.test(c) ? '' : 'hide'; $('#t_ly').className = /^không thành công/i.test(c) ? '' : 'hide'; if (/^đã thành công/i.test(c)) { if (!$('#t_nt').value) $('#t_nt').value = homNgay(); if (!$('#td_bd').value) $('#td_bd').value = homNgay(); giaTu('td'); ktTu('td'); } };
   $('#t_chot').onchange = chg;
-  $('#t_goi').onclick = function () { this.className = this.className ? '' : 'pri'; };
 }
 function saveTT(n) {
   var x = ttTim(n), g = function (i) { var e = $('#' + i); return e ? e.value : ''; };
-  var ch = { daGoi: $('#t_goi').className.indexOf('pri') >= 0, lienHe: g('t_lh'), chot: g('t_chot'), trangThai: g('t_tt'), hinhThuc: g('t_hf'), lyDo: /^không thành công/i.test(g('t_chot')) ? g('t_lydo') : '', soTien: /^đã thành công/i.test(g('t_chot')) ? g('t_st') : '', hinhThucTien: /^đã thành công/i.test(g('t_chot')) ? g('t_hinh') : '', ngayTien: /^đã thành công/i.test(g('t_chot')) ? dmy(g('t_nt')) : '', ghiNote: g('t_note') };
+  var ch = { daGoi: $('#t_goi').checked, lienHe: g('t_lh'), chot: g('t_chot'), trangThai: g('t_tt'), hinhThuc: g('t_hf'), lyDo: /^không thành công/i.test(g('t_chot')) ? g('t_lydo') : '', soTien: /^đã thành công/i.test(g('t_chot')) ? g('t_st') : '', hinhThucTien: /^đã thành công/i.test(g('t_chot')) ? g('t_hinh') : '', ngayTien: /^đã thành công/i.test(g('t_chot')) ? dmy(g('t_nt')) : '', ghiNote: g('t_note') };
   if (!/^đã thành công/i.test(ch.chot)) return luuNen('openTT', n, x, { act: 'capNhatTaiTuc', row: n, exp: { ten: x.ten, sdt: x.sdt }, ch: ch, dk: null }, 'te2');
   $('#te2').innerHTML = '<div class="spin">Đang lưu...</div>';
   call({ act: 'capNhatTaiTuc', row: n, exp: { ten: x.ten, sdt: x.sdt }, ch: ch, dk: /^đã thành công/i.test(ch.chot) ? dkGet('td') : null, baoPhi: bpCua('t', n) }).then(function (r) {
