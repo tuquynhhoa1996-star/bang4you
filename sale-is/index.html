@@ -399,6 +399,69 @@ var Core = (function () {
     }
     return out;
   };
+  // ---------- DANH SACH HOC VIEN 2.26 ----------
+  // 10/11/2026 chi Hoa: moi sale tim duoc MOI hoc vien trong file 2.26 Quan ly hoc vien (moi tab = 1 co so),
+  // ke ca be khong co dong 1.26/3.26 (hoc vien cu, nghi luon, da hoc thu). Chi doc, SDT day du.
+  C.HV_BO_TAB = /^(MISC|MICS|LỊCH HỌC|TT|MÃ HV|THEO DÕI|TRANG TÍNH|MẪU)/;
+  function NC(x) { return N(x).normalize('NFC'); }
+  function cot1(h, ds) { for (var k = 0; k < ds.length; k++) { var v = h[NC(ds[k])]; if (v != null) return v; } return -1; }
+  C.hv226 = function (tabs) {
+    var out = [];
+    Object.keys(tabs || {}).forEach(function (tab) {
+      if (C.HV_BO_TAB.test(NC(tab))) return;
+      var rows = tabs[tab] || [], hi = -1;
+      for (var i = 0; i < Math.min(6, rows.length); i++) if ((rows[i] || []).some(function (x) { var k = NC(x); return k === NC('TÊN HỌC SINH') || k === NC('TÊN HỌC VIÊN'); })) { hi = i; break; }
+      if (hi < 0) return;
+      var h = {}; (rows[hi] || []).forEach(function (x, i) { var k = NC(x); if (k && h[k] == null) h[k] = i; });
+      var c = {
+        ten: cot1(h, ['TÊN HỌC SINH', 'TÊN HỌC VIÊN']), sdt: cot1(h, ['SĐT LIÊN HỆ', 'SĐT', 'SỐ ĐIỆN THOẠI']), ma: cot1(h, ['MÃ HV']),
+        ns: cot1(h, ['NGÀY SINH', 'NĂM SINH', 'NĂN SINH']), lop: cot1(h, ['LỚP', 'TUYỂN']), truong: cot1(h, ['TRƯỜNG HỌC']), khoa: cot1(h, ['KHÓA HỌC', 'KHOÁ HỌC']),
+        tt: cot1(h, ['TÌNH TRẠNG KH', 'TÌNH TRẠNG KHÓA HỌC', 'TÌNH TRẠNG KHOÁ HỌC', 'TÌNH TRẠNG']), kt: cot1(h, ['NGÀY KẾT THÚC'])
+      }, hc = -1;
+      Object.keys(h).forEach(function (k) { if (hc < 0 && /^(HẠN SAU TẾT|CỘNG HẠN SAU TẾT|NGÀY KẾT THÚC SAU TẾT)/.test(k.normalize('NFC'))) hc = h[k]; });
+      if (c.ten < 0) return;
+      for (var j = hi + 1; j < rows.length; j++) {
+        var r = rows[j], ten = cell(r, c.ten).replace(/\s+/g, ' '); if (!ten || /^\d+$/.test(ten)) continue;
+        var sg = raw(r, c.sdt), ps = C.phones(sg);
+        out.push({ ten: ten, sdt: ps.length ? ps[0].sdt : C.normPhone(sg), sdt2: ps.slice(1).map(function (p) { return p.sdt; }).join(' '), coSo: tab.replace(/^BĐ\s+/, ''), row: j + 1,
+          ma: cell(r, c.ma), ns: cell(r, c.ns), lop: cell(r, c.lop), truong: cell(r, c.truong), khoa: cell(r, c.khoa), tt: cell(r, c.tt) || 'Chưa ghi tình trạng',
+          han: cell(r, hc) || cell(r, c.kt) });
+      }
+    });
+    return out;
+  };
+  C.HV_DANG = /^(ĐANG HỌC|BẢO LƯU|HS CŨ ĐI HỌC LẠI|HV NGHỈ (LUÔN )?ĐI HỌC LẠI)/;
+  C.hvDangHoc = function (x) { return C.HV_DANG.test(NC(x && x.tt)); };
+  C.NC = NC;
+  // cung luat tim voi o tim khach: tu 4 so, hoac ten tu 3 ky tu (go khong dung thu tu van ra)
+  C.timHV = function (ds, q, limit) {
+    var out = [], t = noDau(q), ph = String(q || '').replace(/\D/g, ''), lim = limit || 15;
+    var soOk = /^\d{4,}$/.test(String(q || '').replace(/[\s.]/g, '')), tenOk = !soOk && t.replace(/ /g, '').length >= 3;
+    if (!soOk && !tenOk) return out;
+    for (var i = 0; i < (ds || []).length && out.length < 300; i++) {
+      var x = ds[i], sd = String(x.sdt || '') + ' ' + (x.sdt2 || ''), nm = x._n != null ? x._n : (x._n = noDau(x.ten));
+      if ((soOk && sd.indexOf(ph) >= 0) || (tenOk && khopTen(nm, t))) out.push({ x: x, d: soOk ? 0 : nm === t ? 0 : nm.indexOf(t) >= 0 ? 1 : 2, h: C.hvDangHoc(x) ? 0 : 1 });
+    }
+    out.sort(function (a, b) { return a.d - b.d || a.h - b.h; }); // ten khop lien truoc, be dang hoc truoc
+    return out.slice(0, lim).map(function (o) { var y = {}; for (var k in o.x) if (k !== '_n') y[k] = o.x[k]; y.hv = 1; return y; });
+  };
+  // bo be 2.26 da hien o ket qua 1.26/3.26 (cung ten + cung 1 SDT; hoac cung ten khi 2.26 khong co SDT)
+  // Ten co so tab 2.26 -> lua chon co so 1.26 (vd "ĐH VINH" -> "Đại Học Vinh", "NTĐTP" -> "Nhà Thi Đấu TP")
+  function csGon(x) { return noDau(x).replace(/^bd\s+/, '').replace(/\bdh\b/g, 'dai hoc').replace(/^ntdtp$/, 'nha thi dau tp').replace(/^thcs\s+(hong son)$/, '$1').replace(/\s+/g, ' ').trim(); }
+  C.csKhop = function (tab, ds) {
+    var g = csGon(tab); if (!g) return '';
+    for (var i = 0; i < (ds || []).length; i++) if (ds[i] && csGon(ds[i]) === g) return ds[i];
+    return '';
+  };
+  C.boTrungHV = function (hv, da) {
+    var k = {};
+    (da || []).forEach(function (o) { var n = noDau(o.ten); [].concat(o.sdts && o.sdts.length ? o.sdts.map(function (p) { return p.sdt; }) : [], o.sdt || '', o.sdtChe || '').forEach(function (p) { var d = String(p).replace(/\D/g, '').slice(-9); k[n + '|' + d] = 1; }); k[n + '|'] = k[n + '|'] || 0; k['ten|' + n] = 1; });
+    return (hv || []).filter(function (x) {
+      var n = noDau(x.ten), ps = [x.sdt || ''].concat(String(x.sdt2 || '').split(' ').filter(Boolean));
+      if (!ps.join('')) return !k['ten|' + n];
+      return !ps.some(function (p) { return k[n + '|' + String(p).replace(/\D/g, '').slice(-9)]; });
+    });
+  };
   // Khi them khach: be cung HO TEN (>= 2 chu) ma khac SDT, dang do sale khac cham
   function trungTen(cfg, h, data, ten, sdt, sale, today) {
     var d = cfg.data, key = noDau(ten), out = [];
@@ -705,7 +768,7 @@ var Core = (function () {
     if (!C.canTouch(user, sale)) return { ok: false, errors: ['Học sinh này do ' + sale + ' phụ trách, bạn không sửa được.'] };
     if (N(T(ch.chot)) === N(DONE_CLOSE) && T(ch.ngayTien)) {
       var ntq = C.parseDate(ch.ngayTien, td.y), hq = C.hanCuoi(brand, reten, sdt, ten);
-      if (ntq && hq && !C.laTaiKi(hq.han, ntq)) return { ok: false, errors: ['Bé hết hạn khoá ngày ' + C.fmtDate(hq.han) + ', đóng lại ngày ' + C.fmtDate(ntq) + ' là quá 1 tháng nên tính KHÁCH MỚI: nhập ở màn Khách (file 1.26), không nhập tái kí ở 3.26.'] };
+      if (ntq && hq && !C.laTaiKi(hq.han, ntq)) return { ok: false, errors: ['Bé hết hạn khoá ngày ' + C.fmtDate(hq.han) + ', đóng lại ngày ' + C.fmtDate(ntq) + ' là quá 1 tháng nên tính KHÁCH MỚI: nhập ở tab Học viên (file 1.26), không nhập tái kí ở 3.26.'] };
     }
     // 06/11/2026 chi Hoa: dong da chot thanh cong (hoac da co so tien) ma thu tien lan nua (tai ki truoc han, bo sung hoc phi)
     // -> KHONG ghi de dong cu, them DONG MOI cuoi file 3.26 chep thong tin hoc sinh roi dien thong tin tai ki.
@@ -2567,8 +2630,11 @@ var DEMO_TK = /*DEMO_TK*/null || { IS: [{ ma: 'IS_DEMO', nganHang: 'VietinBank',
 var DEMO_TT = { lienHe: ['Liên hệ thành công', 'Chưa liên hệ được, phải thử lại', 'Chưa gọi'], chot: ['Đã thành công', 'Đang xem xét', 'Không thành công', 'Đang đợi CK'], trangThai: ['Đang học', 'Bảo lưu', 'Nghỉ luôn', 'Tái đăng kí'], hinhThuc: ['Tập Trung', 'Kèm Riêng'], lyDo: ['F – Lịch học không phù hợp', 'G – Học phí', 'Chưa xác định'], payMethod: ['Chuyển khoản', 'Tiền mặt'] };
 function demoInit() {
   ['IS', '4Y'].forEach(function (b) { var k = Core.SK[b], hd = Object.keys(k).filter(function (x) { return x !== 'contactVal'; }).map(function (x) { return k[x]; });
-    DB[b] = { data: Sample.data(b), reten: Sample.reten(b), misc: Sample.misc(b), kho: [], soP: 0, bp: [], soBP: 0, sk: [hd, demoSk(hd, k, 'Lê Minh An', '0912000111', b === 'IS' ? 'JR CUP 2026' : 'Giải U9 mùa đông', '500000')] }; });
+    DB[b] = { hv: demoHV(b), data: Sample.data(b), reten: Sample.reten(b), misc: Sample.misc(b), kho: [], soP: 0, bp: [], soBP: 0, sk: [hd, demoSk(hd, k, 'Lê Minh An', '0912000111', b === 'IS' ? 'JR CUP 2026' : 'Giải U9 mùa đông', '500000')] }; });
 }
+function demoHV(b) { var hd = ['STT', 'TÊN HỌC SINH', 'MÃ HV', 'NGÀY SINH', 'LỚP', 'TRƯỜNG HỌC', 'SĐT LIÊN HỆ', 'KHÓA HỌC', 'NOTE', 'TÌNH TRẠNG KH', 'NGÀY BẮT ĐẦU', 'NGÀY KẾT THÚC', 'HẠN SAU TẾT 2026'], t = {};
+  t[b === 'IS' ? 'ĐH VINH' : 'BĐ Trung Long'] = [hd, ['1', 'Phan Gia Bảo', b + '-00901', '12/03/2016', 'Cấp 1', 'TH Hưng Dũng', '0915777001', 'KH 3 THÁNG', '', 'Nghỉ luôn', '01/03/2026', '01/06/2026', '08/06/2026'], ['2', 'Trịnh Minh Khôi', b + '-00902', '05/09/2015', 'Cấp 1', 'TH Lê Mao', '0915777002', 'KH 6 THÁNG', '', 'Đang học', '01/09/2026', '01/03/2027', '10/03/2027'], ['3', 'Lê Bảo An', b + '-00903', '2017', 'Cấp 1', '', '0915777003', '', '', 'Đã học thử', '', '', '']];
+  return Core.hv226(t); }
 function demoSk(hd, k, ten, sdt, giai, tien) { var r = hd.map(function () { return ''; }); r[hd.indexOf(k.name)] = ten; r[hd.indexOf(k.phone)] = sdt; r[hd.indexOf(k.giai)] = giai; r[hd.indexOf(k.amount)] = tien; r[hd.indexOf(k.source)] = 'Học viên'; return r; }
 function demoKho(b, ph, src, tien, f, u) { var d = DB[b]; ph.so = 'DEMO-' + ('000' + (++d.soP)).slice(-4); d.kho.push({ so: ph.so, phieu: ph, src: src, tien: tien, f: f, suaLan: 0, today: Sample.TODAY, u: u }); return ph; }
 function demoUser(b) { var u = st.me.brands[b]; return { ten: st.me.ten, saleName: u.sale, leader: u.leader }; }
@@ -2595,6 +2661,7 @@ function demoCall(p) {
         if (p.act === 'tuyChon') { var o = Core.options(b, d.misc, d.data); if (!u.leader) o.sale = [u.saleName]; o.tt = DEMO_TT; o.nguoiLap = [{ ten: 'Bùi Thị Lệ Quyên', pb: 'BR' }, { ten: 'Phan Thị Thanh Hiền', pb: 'BR' }, { ten: 'Trần Thị Minh Phương', pb: 'BĐ' }]; o.giai = Core.giaiGoiY(b, d.sk, o.coSo); o.giai.payMethod = o.payMethod; return ok(o); }
         if ((p.act === 'capNhatTaiTuc' || p.act === 'capNhat') && p.baoPhi && p.dk) d.bp.forEach(function (r) { if (r.so === p.baoPhi && r.tt === 'Chờ chuyển') r.tt = 'Đã thu'; });
         if (p.act === 'capNhatTaiTuc') { var pt = Core.planTaiTuc(b, d.reten, u, Number(p.row), p.exp, p.ch, DEMO_TT, today, p.dk); if (!pt.ok) return ok({ ok: false, loi: pt.errors }); d.reten = Core.apply(d.reten, pt); var sr2 = p.dk ? Core.dkNguon(b, 'reten', d.reten, Number(p.row)) : null, tn2 = { soTien: p.ch.soTien, ngayTien: p.ch.ngayTien, hinhThucTien: p.ch.hinhThucTien }, ph2 = p.dk ? demoKho(b, Core.phieuThu(b, sr2, tn2, p.dk, '', u, today), sr2, tn2, p.dk, 'demo') : null; return ok({ ok: true, log: pt.log, phieu: ph2, thongBao: 'DEMO: đã lưu thử trong bộ nhớ trình duyệt.' }); }
+        if (p.act === 'timHV') return ok(Core.timHV(d.hv, p.q, 15));
         if (p.act === 'timKhac') return ok(Core.timKhac(b, d.data, u, p.q, today, 10, d.reten));
         if (p.act === 'timKhach') return ok(Core.timKhach(b, d.data, u, p.q, 30).concat(Core.locDs(Core.dsTaiTuc(b, d.reten, u, today), p.q, 30)));
         if (p.act === 'khoPhieu') return ok({ ds: d.kho.slice().reverse().map(function (r) { return { so: r.so, phieu: r.phieu, f: r.f, tien: r.tien, giai: !!r.phieu.giai, suaLan: r.suaLan, today: r.today }; }) });
@@ -2642,7 +2709,7 @@ function render() {
   if (!st.thu && st.banSao) h += '<div class="banner"><b>ĐANG CHẠY THỬ</b>: dữ liệu lưu vào file bản sao, chưa vào file 1.26 thật.</div>';
   if (st.thu) h += '<div class="banner"><b>CHẾ ĐỘ THỬ</b>: lưu chỉ để xem trước, <b>không ghi vào Sheet thật</b>.' + (DEMO ? ' Dữ liệu là dữ liệu mẫu.' : '') + '</div>';
   var body = st.tab === 'homnay' ? homView() : st.tab === 'khach' ? khachView() : st.tab === 'giai' ? giaiView() : st.tab === 'phieu' ? phieuView() : st.tab === 'muado' ? muaDoView() : st.tab === 'data' ? dataView() : st.tab === 'hieuqua' ? hqView() : themView();
-  h += '<main>' + body + '</main><nav>' + [['homnay', 'Hôm nay'], ['khach', 'Khách'], ['data', '+ Data mới'], ['them', '+ Học thử'], ['giai', '+ Giải'], ['phieu', 'Phiếu thu']].map(function (t) { return '<button class="' + (st.tab === t[0] || st.tab === 'muado' && t[0] === 'phieu' ? 'on' : '') + '" onclick="setTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</nav>';
+  h += '<main>' + body + '</main><nav>' + [['homnay', 'Hôm nay'], ['khach', 'Học viên'], ['data', '+ Data mới'], ['them', '+ Học thử'], ['giai', '+ Giải'], ['phieu', 'Phiếu thu']].map(function (t) { return '<button class="' + (st.tab === t[0] || st.tab === 'muado' && t[0] === 'phieu' ? 'on' : '') + '" onclick="setTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</nav>';
   $('#app').innerHTML = h;
 }
 function loginView() {
@@ -2799,7 +2866,7 @@ function onhq(v) {
 function hqKq() {
   var l = st.kq || [];
   return '<div class="btns" style="margin:0 0 6px"><button onclick="$(\'#hq\').value=\'\';onhq(\'\')">Xoá tìm, về danh sách hôm nay</button></div>' +
-    (l.length ? l.map(kqCard).join('') : '<div class="empty">Không thấy học sinh trong phạm vi của bạn</div>') + khacList(st.hq);
+    (l.length ? l.map(kqCard).join('') : '<div class="empty">Không thấy học sinh trong phạm vi của bạn</div>') + khacList(st.hq) + hvList(st.hq);
 }
 function khachView() {
   var s = locBar() + '<label>Tìm theo SĐT hoặc tên bé</label><input id="q" value="' + esc(st.q) + '" oninput="onq(this.value)" placeholder="vd 0988... hoặc Nguyễn An"><div id="kq">' + kqList() + '</div>';
@@ -2810,10 +2877,40 @@ function onq(v) {
   st.q = v; clearTimeout(qt); timKhacHen(v, function () { if ($('#kq')) $('#kq').innerHTML = kqList(); });
   if (st.ds && st.dsKey === st.brand + '|' + (st.loc || '')) { st.kq = timMay(v); if ($('#kq')) $('#kq').innerHTML = kqList(); return; }
   qt = setTimeout(function () { call({ act: 'timKhach', q: v }).then(function (r) { st.kq = r; $('#kq').innerHTML = kqList(); }).catch(function (e) { $('#kq').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }, 350); }
-function kqList() { return (st.kq.length ? st.kq.map(kqCard).join('') : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy khách trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>') + khacList(st.q); }
+function kqList() { var kh = khacList(st.q), hv = hvList(st.q), co = /class="card/.test(kh + hv); return (st.kq.length ? st.kq.map(kqCard).join('') : co ? '' : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy học viên trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>') + kh + hv; }
 // 09/11/2026 chi Hoa: hien be cua SALE KHAC (chi xem, che SDT) de khong cham trung. Luat: sale cu lien he trong 30 ngay thi sale cu giu.
 var kht, khSeq = 0;
+// 10/11/2026 chi Hoa: tim ca hoc vien file 2.26 (moi co so, moi tinh trang), moi sale deu thay
+var hvt, hvSeq = 0;
+function timHVHen(v, ve) {
+  clearTimeout(hvt); st.kqHV = []; st.kqHVQ = '';
+  var t = (v || '').trim(), so = t.replace(/[\s.]/g, ''); if (!(/^\d{4,}$/.test(so) || t.replace(/\s/g, '').length >= 3)) return;
+  var lan = ++hvSeq; hvt = setTimeout(function () { call({ act: 'timHV', q: t }).then(function (r) { if (lan !== hvSeq) return; st.kqHV = r || []; st.kqHVQ = t; ve(); }).catch(function () {}); }, 450);
+}
+function hvList(q) {
+  var l = st.kqHV || []; if ((st.kqHVQ || '') !== (q || '').trim()) return (q || '').trim().length >= 3 ? '<div class="sub" style="margin:6px 2px">Đang tìm trong danh sách học viên...</div>' : '';
+  l = Core.boTrungHV(l, (st.kq || []).concat(st.kqKhac || [])); if (!l.length) return '';
+  return '<div class="card" style="background:#eef6ff;border-color:#9cc3f5"><b>Trong danh sách học viên (' + l.length + ')</b><div class="sub">Lấy từ file 2.26 Quản lý học viên, gồm cả bé đã nghỉ, đã học thử. Chưa có dòng chăm sóc trên app.</div></div>' + l.map(hvCard).join('');
+}
+function hvCard(x) {
+  var dang = Core.hvDangHoc(x), i = (st.kqHV || []).indexOf(x);
+  return '<div class="card"><b>' + esc(x.ten) + '</b>' + (x.ma ? ' <span class="sub">' + esc(x.ma) + '</span>' : '') + '<div class="sub">' +
+    [x.sdt ? '<a href="tel:' + esc(x.sdt) + '">' + esc(x.sdt) + '</a>' + (x.sdt2 ? ' · ' + esc(x.sdt2) : '') : 'chưa có SĐT', esc(x.coSo), x.lop ? 'Lớp ' + esc(x.lop) : '', x.ns ? 'Sinh ' + esc(x.ns) : ''].filter(Boolean).join(' · ') + '</div>' +
+    '<div class="sub"><b style="color:' + (dang ? '#15803d' : '#64748b') + '">' + esc(x.tt) + '</b>' + (x.khoa ? ' · ' + esc(x.khoa) : '') + (x.han ? ' · Hạn ' + esc(ngNgan(x.han)) : '') + '</div>' +
+    (dang ? '<div class="sub" style="color:#b45309">Bé đang học nhưng chưa có dòng ở file 3.26 nên app chưa thu tái kí được. Báo HCNS thêm bé vào 3.26.</div>'
+      : '<div class="btns"><button onclick="hvSangData(' + i + ')">Thêm vào Data mới để chăm</button></div>') + '</div>';
+}
+function hvSangData(i) {
+  var x = (st.kqHV || [])[i]; if (!x) return; setTab('data');
+  setTimeout(function () {
+    var set = function (id, v) { var e = $('#' + id); if (e && v) e.value = v; };
+    set('d_sdt', x.sdt); set('d_ten', x.ten); set('d_ns', x.ns && /\d{1,2}\D\d{1,2}\D\d{2,4}/.test(x.ns) ? x.ns : ''); set('d_truong', x.truong);
+    var cs = $('#d_cs'), k = cs ? Core.csKhop(x.coSo, [].slice.call(cs.options).map(function (o) { return o.value; })) : ''; if (k) cs.value = k;
+    set('d_note', 'Học viên cũ (file 2.26: ' + x.coSo + ', ' + x.tt + (x.han ? ', hạn ' + x.han : '') + ').');
+  }, 50);
+}
 function timKhacHen(v, ve) {
+  timHVHen(v, ve);
   clearTimeout(kht); st.kqKhac = []; st.kqKhacQ = '';
   var me = st.me && st.me.brands && st.me.brands[st.brand]; if (me && me.leader && !st.loc) return;
   var t = (v || '').trim(), so = t.replace(/[\s.]/g, ''); if (!(/^\d{4,}$/.test(so) || t.replace(/\s/g, '').length >= 3)) return;
@@ -3454,7 +3551,7 @@ function pkqList() {
   if (l.length) out += '<h3>Chỉ lưu trên máy này<em>' + l.length + '</em></h3><div class="sub" style="margin:0 2px 6px">Phiếu lập trước khi có kho (trước 06/11), chỉ xem lại được. Cần sửa thì báo quản lý.</div>' +
     l.map(function (p) { var j = dsPhieu().indexOf(dsPhieu().filter(function (x) { return x.so === p.so; })[0]); return '<div class="card"><div class="t"><span class="n">' + esc(p.ten) + '</span><span class="sub">' + esc(p.so) + '</span></div><div class="sub">' + esc(p.ngay) + ' · ' + Core.tien(p.soTien) + 'đ · ' + esc(p.khoa) + '</div><div class="btns"><button onclick="moPhieu(dsPhieu()[' + j + '])">Xem / gửi lại</button></div></div>'; }).join('');
   if (!out) out = '<div class="empty">' + (st.kho ? (q ? 'Không thấy phiếu khớp' : 'Chưa có phiếu nào') : (st.thu && !DEMO ? 'Chế độ thử không có kho phiếu' : 'Đang tải...')) + '</div>';
-  if (q.length >= 2) out += '<div class="card" style="background:#f3f7ff"><div class="sub">Tab này chỉ chứa phiếu <b>đã lập</b>. Muốn <b>lập phiếu mới</b> cho học sinh: tìm học sinh ở tab Khách rồi bấm Chốt - thu tiền.</div><div class="btns"><button class="pri" onclick="timKhachTuPhieu()">Tìm \u201c' + esc(q) + '\u201d ở tab Khách</button></div></div>';
+  if (q.length >= 2) out += '<div class="card" style="background:#f3f7ff"><div class="sub">Tab này chỉ chứa phiếu <b>đã lập</b>. Muốn <b>lập phiếu mới</b> cho học sinh: tìm học sinh ở tab Học viên rồi bấm Chốt - thu tiền.</div><div class="btns"><button class="pri" onclick="timKhachTuPhieu()">Tìm \u201c' + esc(q) + '\u201d ở tab Học viên</button></div></div>';
   return out;
 }
 function openSua(i) {
