@@ -19,7 +19,7 @@ h3 em{font-style:normal;background:#13803d;color:#fff;border-radius:10px;padding
 .card .t{display:flex;justify-content:space-between;gap:8px}.card .n{font-weight:700}
 .tag{display:inline-block;background:#e8efff;color:#13803d;border-radius:6px;padding:1px 7px;font-size:12px;margin-top:3px}
 .tag.red{background:#ffe6e3;color:#a1261b}.tag.grn{background:#e2f6e8;color:#14703a}
-.sub{color:#556;font-size:13px;margin-top:2px}.note{color:#667;font-size:12px;margin-top:4px;white-space:pre-wrap}
+.sub{color:#556;font-size:13px;margin-top:2px}.ls126{margin-top:6px;font-size:12px;color:#556}.ls126 summary{cursor:pointer;padding:4px 0}.note{color:#667;font-size:12px;margin-top:4px;white-space:pre-wrap}
 .btns{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.btns>*{min-width:28%}
 .btns a,.btns button,.btn{flex:1;text-align:center;padding:9px 6px;border-radius:9px;border:1px solid #cfd6e2;background:#fff;color:#13803d;font-weight:600;text-decoration:none;font-size:14px}
 .btn.pri,.btns .pri{background:#13803d;color:#fff;border-color:#13803d}
@@ -314,6 +314,26 @@ var Core = (function () {
     return out;
   };
   // Tim trong danh sach da tai ve (cung luat voi timKhach)
+  // 10/11/2026 chi Hoa: be co the 1.26 da chot thanh cong + the 3.26 (cung SDT chuan hoa + cung ten, khong phan biet hoa/thuong, dau cach)
+  // chi hien 1 the hoc vien 3.26; lich su 1.26 thu thanh 1 dong nho (x.ls126). Chi doi hien thi, khong sua du lieu.
+  function khoaTen(s) { return String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ''); }
+  function tapSdt(x) { var l = (x.sdts && x.sdts.length ? x.sdts.map(function (p) { return p.sdt; }) : [x.sdt]), o = {}; l.forEach(function (p) { var n = C.normPhone(p || ''); if (n) o[n] = 1; }); return o; }
+  C.gopKq = function (list) {
+    list = list || []; var tt = list.filter(function (x) { return x.tt; });
+    if (!tt.length) return list;
+    var drop = {}; tt.forEach(function (y) { y.ls126 = null; });
+    list.forEach(function (x, i) {
+      if (x.tt || x.khac || !/^đã thành công/i.test(T(x.chot))) return;
+      var sx = tapSdt(x), kt = khoaTen(x.ten); if (!kt) return;
+      for (var k = 0; k < tt.length; k++) {
+        var y = tt[k]; if (khoaTen(y.ten) !== kt) continue;
+        var sy = tapSdt(y), chung = Object.keys(sx).some(function (p) { return sy[p]; });
+        if (!chung) continue;
+        (y.ls126 = y.ls126 || []).push(x); drop[i] = 1; break;
+      }
+    });
+    return list.filter(function (x, i) { return !drop[i]; });
+  };
   C.locDs = function (ds, q, limit) {
     var t = noDau(q), ph = C.normPhone(q), out = [];
     if (t.length < 2 && ph.length < 4) return out;
@@ -2769,7 +2789,14 @@ function taiDs() { // tai ca danh sach khach (1 lan, nen) de o tim kiem ra ngay
 }
 function timMay(v) { return Core.locDs(st.ds, v, 30).concat(st.dsTT ? Core.locDs(st.dsTT, v, 20) : []); }
 function ttTim(n) { return (st.hn && st.hn.taiTuc || []).concat(st.dsTT || [], st.kq || []).filter(function (k) { return k.tt && k.row === n; })[0]; }
-function kqCard(x) { if (x.tt) { if (!x._lb) { x._lb = 1; x.lyDo = 'Học viên 3.26 · ' + x.lyDo + (x.trangThai ? ' · ' + x.trangThai : ''); } return card(x, 'tt'); } x.lyDo = [x.hocThu, x.chot].filter(Boolean).join(' · ') || 'Chưa có trạng thái'; return card(x, 'k'); }
+function ls126Html(x) {
+  if (!x.ls126 || !x.ls126.length) return '';
+  return x.ls126.map(function (o) {
+    var t = 'Khách mới ' + (o.ngayHocThu && o.ngayHocThu.length ? o.ngayHocThu[0] : (o.ngayGoi || '')) + ' · ' + ([o.hocThu, o.chot].filter(Boolean).join(' · ') || 'đã chốt');
+    return '<details class="ls126"><summary>' + esc(t.replace(/\s+·/, ' ·')) + '</summary><div class="note">' + esc(o.note || '(không có ghi chú)') + '</div></details>';
+  }).join('');
+}
+function kqCard(x) { if (x.tt) { if (!x._lb) { x._lb = 1; x.lyDo = 'Học viên 3.26 · ' + x.lyDo + (x.trangThai ? ' · ' + x.trangThai : ''); } var h = card(x, 'tt'); return x.ls126 ? h.replace(/<\/div>$/, ls126Html(x) + '</div>') : h; } x.lyDo = [x.hocThu, x.chot].filter(Boolean).join(' · ') || 'Chưa có trạng thái'; return card(x, 'k'); }
 function boot() {
   try { st.loc = localStorage.getItem(locKey()) || ''; } catch (e) { st.loc = ''; }
   $('#app').innerHTML = '<div class="spin">Đang tải...</div>';
@@ -2887,7 +2914,7 @@ function onhq(v) {
 function hqKq() {
   var l = st.kq || [];
   return '<div class="btns" style="margin:0 0 6px"><button onclick="$(\'#hq\').value=\'\';onhq(\'\')">Xoá tìm, về danh sách hôm nay</button></div>' +
-    (l.length ? l.map(kqCard).join('') : '<div class="empty">Không thấy học sinh trong phạm vi của bạn</div>') + khacList(st.hq) + hvList(st.hq);
+    (l.length ? Core.gopKq(l).map(kqCard).join('') : '<div class="empty">Không thấy học sinh trong phạm vi của bạn</div>') + khacList(st.hq) + hvList(st.hq);
 }
 function khachView() {
   var s = locBar() + '<label>Tìm theo SĐT hoặc tên bé</label><input id="q" value="' + esc(st.q) + '" oninput="onq(this.value)" placeholder="vd 0988... hoặc Nguyễn An"><div id="kq">' + kqList() + '</div>';
@@ -2898,7 +2925,7 @@ function onq(v) {
   st.q = v; clearTimeout(qt); timKhacHen(v, function () { if ($('#kq')) $('#kq').innerHTML = kqList(); });
   if (st.ds && st.dsKey === st.brand + '|' + (st.loc || '')) { st.kq = timMay(v); if ($('#kq')) $('#kq').innerHTML = kqList(); return; }
   qt = setTimeout(function () { call({ act: 'timKhach', q: v }).then(function (r) { st.kq = r; $('#kq').innerHTML = kqList(); }).catch(function (e) { $('#kq').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }, 350); }
-function kqList() { var kh = khacList(st.q), hv = hvList(st.q), co = /class="card/.test(kh + hv); return (st.kq.length ? st.kq.map(kqCard).join('') : co ? '' : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy học viên trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>') + kh + hv; }
+function kqList() { var kh = khacList(st.q), hv = hvList(st.q), co = /class="card/.test(kh + hv); return (st.kq.length ? Core.gopKq(st.kq).map(kqCard).join('') : co ? '' : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy học viên trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>') + kh + hv; }
 // 09/11/2026 chi Hoa: hien be cua SALE KHAC (chi xem, che SDT) de khong cham trung. Luat: sale cu lien he trong 30 ngay thi sale cu giu.
 var kht, khSeq = 0;
 // 10/11/2026 chi Hoa: tim ca hoc vien file 2.26 (moi co so, moi tinh trang), moi sale deu thay
