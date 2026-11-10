@@ -1187,6 +1187,24 @@ var Core = (function () {
   };
   C.SK_CLOSE = 'Đăng ký giải đấu thành công'; C.SK_TRIAL = 'Giải đấu';
   C.laGiai = function (s) { return /gi[ảa]i|^jr\b|cup|3x3|5x5|s[ựu] ki[ệe]n|camp|du đấu/i.test(String(s || '')); };
+  // 10/11/2026 chi Hoa: o chon co so xep gon, co so dang hoc len dau (A-Z), tuyen/Elite giua, giai + trai cu cuoi.
+  // Nhan hien thi day du (CLC -> Chat luong cao, KR -> Kem rieng); GIA TRI ghi Sheet giu nguyen chu goc.
+  C.csNhan = function (s) {
+    var t = T(s);
+    if (/^CLC\s+/i.test(t)) return t + ' (Chất lượng cao)';
+    if (/^KR\s+/i.test(t)) return t + ' (Kèm riêng)';
+    return t;
+  };
+  C.nhomCoSo = function (list) {
+    var g = [{ ten: 'Cơ sở', ds: [] }, { ten: 'Lớp tuyển, Elite 60', ds: [] }, { ten: 'Giải, trại, sự kiện', ds: [] }], seen = {};
+    (list || []).forEach(function (v) {
+      var t = T(v), k = N(t); if (!t || seen[k]) return; seen[k] = 1;
+      var i = C.laGiai(t) || /summer|issc|final year|first year|^u\d+\s+\d{4}$|hkpđ/i.test(t) ? 2 : /^(tuyển|đội tuyển|elite|e60)\b/i.test(t) ? 1 : 0;
+      g[i].ds.push({ v: t, l: C.csNhan(t) });
+    });
+    g.forEach(function (x) { x.ds.sort(function (a, b) { return noDau(a.l).localeCompare(noDau(b.l), 'vi', { numeric: true }); }); });
+    return g.filter(function (x) { return x.ds.length; });
+  };
   // goi y: ten giai gan day (moi nhat truoc) + le phi hay gap cua tung giai (300 dong cuoi tab DATA SU KIEN)
   C.giaiGoiY = function (brand, sk, coSo) {
     var out = { ds: [], gia: {}, nguon: {} };
@@ -2928,6 +2946,7 @@ function khacList(q) {
 function pmDs(a, b) { // file khong khai danh sach hinh thuc tien thi van cho chon (07/11/2026, Linh bao loi tai ki 4Y)
   var l = (a && a.length ? a : b && b.length ? b : []); return l.length ? l : ['Chuyển khoản', 'Tiền mặt'];
 }
+function selCs(id, list, val, blank) { return '<select id="' + id + '">' + '<option value="">' + (blank || '- chọn -') + '</option>' + Core.nhomCoSo(list).map(function (g) { return '<optgroup label="' + esc(g.ten) + '">' + g.ds.map(function (o) { return '<option value="' + String(o.v).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }) + '"' + (o.v === val ? ' selected' : '') + '>' + esc(o.l) + '</option>'; }).join('') + '</optgroup>'; }).join('') + '</select>'; }
 function sel(id, list, val, blank) { return '<select id="' + id + '">' + (blank !== false ? '<option value="">' + (blank || '- chọn -') + '</option>' : '') + (list || []).map(function (o) { return '<option' + (o === val ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'; }
 function themView() {
   var o = st.opt, lead = st.me.brands[st.brand].leader, today = Sample.TODAY;
@@ -2935,7 +2954,7 @@ function themView() {
     '<label>Tên bé *</label><input id="f_ten"><div class="row2"><div><label>Ngày sinh *</label><input id="f_ns" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off"></div><div><label>SĐT phụ huynh *</label><input id="f_sdt" inputmode="tel" placeholder="09xx..."></div></div>' +
     '<label>Tên phụ huynh *</label><input id="f_ph"><label>Trường học *</label><input id="f_truong" placeholder="vd TH Hưng Dũng">' +
     '<div class="row2"><div><label>Lớp *</label>' + sel('f_lop', o.lop, '') + '</div><div><label>Nguồn *</label>' + sel('f_nguon', o.nguon, '') + '</div></div>' +
-    '<label>Cơ sở *</label>' + sel('f_cs', o.coSo, '') +
+    '<label>Cơ sở *</label>' + selCs('f_cs', o.coSo, '') +
     '<div class="row2"><div><label>Ngày học thử</label><input id="f_ngay" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off"></div><div><label>Giờ</label><input id="f_gio" type="time"></div></div>' +
     '<label>Kết quả</label><select id="f_kq"><option value="hen">Hẹn học thử</option><option value="da-hoc">Đã học thử</option><option value="dang-sap-xep">Đang sắp xếp</option><option value="khong-hoc-chot">Không học thử, chốt luôn</option></select>' +
     (lead ? '<label>Sale phụ trách *</label>' + sel('f_sale', o.sale, st.loc || '') : '') +
@@ -2948,7 +2967,7 @@ function dataView() {
     '<div class="row2"><div><label>SĐT phụ huynh *</label><input id="d_sdt" inputmode="tel" placeholder="09xx..."></div><div><label>Nguồn data *</label>' + sel('d_nguon', o.nguon, '') + '</div></div>' +
     '<label>Tên phụ huynh</label><input id="d_ph" autocomplete="off">' +
     '<div class="row2"><div><label>Tên học sinh</label><input id="d_ten" autocomplete="off"></div><div><label>Ngày sinh</label><input id="d_ns" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off"></div></div>' +
-    '<label>Cơ sở quan tâm</label>' + sel('d_cs', o.coSo, '') +
+    '<label>Cơ sở quan tâm</label>' + selCs('d_cs', o.coSo, '') +
     '<div class="row2"><div><label>Lớp</label>' + sel('d_lop', o.lop, '') + '</div><div><label>Trường học</label><input id="d_truong" autocomplete="off"></div></div>' +
     (lead ? '<label>Sale phụ trách *</label>' + sel('d_sale', o.sale, st.loc || '') : '') +
     '<label>Ghi chú (phụ huynh hỏi gì, hẹn gọi lại lúc nào...)</label><textarea id="d_note"></textarea><div id="de"></div><div class="btns"><button class="btn pri" onclick="saveData(false)">Lưu data</button></div>';
@@ -3090,7 +3109,7 @@ function openUpd(n) {
     '<div class="sub" style="margin-top:8px">Thông tin bé: ' + esc([x.ngaySinh ? 'sinh ' + x.ngaySinh : 'CHƯA CÓ NGÀY SINH', x.truong || 'CHƯA CÓ TRƯỜNG', x.lop || 'chưa có lớp'].join(' · ')) + '</div>' +
     '<div class="row2"><div><label>Ngày sinh</label><input id="u_ns" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off"></div><div><label>Lớp</label>' + sel('u_lop', o.lop, '', '- giữ nguyên -') + '</div></div>' +
     '<label>Trường học</label><input id="u_truong" placeholder="' + esc(x.truong || '') + '">' +
-    '<label>Sửa cơ sở</label>' + sel('u_cs', o.coSo, '', '- giữ nguyên -') +
+    '<label>Sửa cơ sở</label>' + selCs('u_cs', o.coSo, '', '- giữ nguyên -') +
     (x.nguon ? '' : '<label>Nguồn data (khách chưa có nguồn)</label>' + sel('u_nguon', o.nguon, '')) +
     '<label class="daGoi"><input type="checkbox" id="u_goi"> Đã gọi được cho phụ huynh</label><div class="sub">Chưa gọi được thì không tích, ghi chú lại (vd "thuê bao, gọi lại tối") rồi bấm Lưu. Bé vẫn nằm ở mục Cần gọi để gọi lần sau.</div>' +
     '<div id="ue"></div><div class="btns"><button onclick="closeUpd()">Đóng</button><button class="pri" onclick="saveUpd(' + n + ')">Lưu</button></div></div>';
@@ -3616,7 +3635,7 @@ function muaDoView() {
   return '<div class="btns" style="margin-top:0"><button onclick="setTab(\'phieu\')">‹ Kho phiếu thu</button></div><h3 style="margin-top:6px">Phiếu mua đồ (không kèm học phí)</h3>' +
     '<div class="sub">Dùng khi khách chỉ mua đồ, không đăng kí học. App thêm 1 dòng vào danh sách đăng kí (khoá học ghi "MUA ...", không có học phí, tiền ghi vào cột từng món) và lập phiếu thu gửi phụ huynh. Khách vừa đăng kí học vừa mua đồ thì vẫn ghi ở mục Các khoản mua thêm khi chốt.</div>' +
     '<label>Tìm học sinh có sẵn để điền nhanh</label><input id="m_q" placeholder="tên bé hoặc SĐT" autocomplete="off" oninput="onMq(this.value)"><div id="m_goi"></div>' +
-    '<label>Tên học sinh / người mua *</label><input id="m_ten"><div class="row2"><div><label>SĐT phụ huynh *</label><input id="m_sdt" inputmode="tel" placeholder="09xx..."></div><div><label>Cơ sở</label>' + sel('m_cs', o.coSo, '') + '</div></div>' +
+    '<label>Tên học sinh / người mua *</label><input id="m_ten"><div class="row2"><div><label>SĐT phụ huynh *</label><input id="m_sdt" inputmode="tel" placeholder="09xx..."></div><div><label>Cơ sở</label>' + selCs('m_cs', o.coSo, '') + '</div></div>' +
     doHtml('m') +
     '<div class="row2"><div><label>Hình thức *</label>' + sel('m_hinh', pmDs(o.payMethod), '') + '</div><div><label>Ngày nhận tiền *</label><input id="m_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off" value="' + homNgay() + '"></div></div>' +
     (lead ? '<label>Sale phụ trách *</label>' + sel('m_sale', o.sale, st.loc || '') : '') +
