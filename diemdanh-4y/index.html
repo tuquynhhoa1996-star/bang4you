@@ -4,10 +4,23 @@
 <style>html,body{margin:0;height:100%;background:#fff}iframe{position:fixed;inset:0;width:100%;height:100%;border:0}</style>
 </head><body>
 <!-- 31/10/2026: mo app NGAY TRONG trang nay (iframe), khong chuyen sang script.google.com.
-Dien thoai dang dang nhap nhieu tai khoan Google bi Google bao "Khong the mo tep" khi mo thang link /exec. -->
+Dien thoai dang dang nhap nhieu tai khoan Google bi Google bao "Khong the mo tep" khi mo thang link /exec.
+11/11/2026: trang nay GIU HO phien dang nhap (cong_app_4Y) vi dien thoai hay xoa bo nho cua khung app.
+Mo lai trang ma khong co #tk thi tu gan phien da luu -> khong phai dang nhap lai. App bao phien moi/dang xuat qua postMessage. -->
 <iframe id="f" title="App điểm danh 4YOU SPORT" allow="camera;geolocation"></iframe>
 <script>
-var u='https://script.google.com/macros/s/AKfycbxlMbwQEIfCg4LpZ6K3fWu4aJHwsbR4e7Y4gl00WlIDvhwbTwlSqZ1sQcEB74GP2sZS/exec'+location.search+location.hash;
-document.getElementById('f').src=u;
+var K='cong_app_4Y', G='https://script.google.com/macros/s/AKfycbxlMbwQEIfCg4LpZ6K3fWu4aJHwsbR4e7Y4gl00WlIDvhwbTwlSqZ1sQcEB74GP2sZS/exec', Q='';
+function ls(k,v){ try{ if(v===undefined) return localStorage.getItem(k); if(v===null) localStorage.removeItem(k); else localStorage.setItem(k,v); }catch(x){} return null; }
+var h=location.hash, m=/(?:^#|&)tk=([^&]+)/.exec(h);
+if(m){ ls(K, decodeURIComponent(m[1])); try{ history.replaceState(null,'',location.pathname+location.search); }catch(x){} }
+else { var t=ls(K); if(t) h=(h&&h!=='#'?h+'&':'#')+'tk='+encodeURIComponent(t); }
+window.addEventListener('message', function(ev){
+  var o=''; try{ o=new URL(ev.origin).hostname; }catch(x){}
+  if(!/\.googleusercontent\.com$/.test(o)) return;
+  var d=ev.data; if(!d || typeof d.ddTk!=='string') return;
+  ls(K, d.ddTk || null);
+});
+var s=location.search;
+document.getElementById('f').src = G + (Q ? Q+(s?'&'+s.slice(1):'') : s) + h;
 </script>
 </body></html>

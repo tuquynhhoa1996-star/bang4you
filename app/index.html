@@ -62,12 +62,14 @@ function post(url, body, lan) {
     .catch(function (x) { if (lan >= 2) throw x; return post(url, body, lan + 1); });
 }
 function thoat() {
-  ls(K, null); ls(KB, null); ls('cong_app_IS', null); ls('cong_app_4Y', null);
+  ls(K, null); ls(KB, null); ls('cong_app_IS', null); ls('cong_app_4Y', null); ls('cong_kq', null);
   $('nut').innerHTML = ''; $('nguoi').classList.add('an'); $('box').classList.remove('an'); say('');
 }
 function nut(href, chu, chinh) { return '<a class="nut ' + (chinh ? 'chinh' : 'phu') + '" href="' + e(href) + '">' + e(chu) + '</a>'; }
 function ve(kq) {
   if (kq.bdh) ls(KB, kq.bdh);
+  // 11/11/2026: nho danh sach nut (khong co token) de lan mo sau hien ngay, kiem phien chay ngam
+  try { var c = {}; for (var x in kq) if (x !== 'bdh' && x !== 'token') c[x] = kq[x]; ls('cong_kq', JSON.stringify(c)); } catch (x) {}
   $('box').classList.add('an'); $('nguoi').classList.remove('an');
   $('tenNg').textContent = kq.ten || kq.u;
   var html = '';
@@ -112,11 +114,13 @@ $('box').addEventListener('submit', function (ev) {
 (function () {
   var tk = ls(K);
   if (!tk) return;
-  $('box').classList.add('an'); $('nut').innerHTML = '<div class="the"><p class="ghi">Đang mở cổng...</p></div>';
+  $('box').classList.add('an');
+  var cu = null; try { cu = JSON.parse(ls('cong_kq') || 'null'); } catch (x) {}
+  if (cu && cu.app) ve(cu); else $('nut').innerHTML = '<div class="the"><p class="ghi">Đang mở cổng...</p></div>';
   post(API, { cong: 1, token: tk }).then(function (kq) {
     if (kq.ok) return ve(kq);
-    thoat(); if (!kq.het) say(kq.msg || '');
-  }).catch(function () { $('nut').innerHTML = ''; $('box').classList.remove('an'); say('Mạng chập chờn, đăng nhập lại.'); });
+    thoat(); say(kq.het ? 'Phiên đăng nhập đã hết, đăng nhập lại.' : (kq.msg || ''));
+  }).catch(function () { if (cu && cu.app) return; $('nut').innerHTML = ''; $('box').classList.remove('an'); say('Mạng chập chờn, đăng nhập lại.'); });
 })();
 </script>
 </body></html>
