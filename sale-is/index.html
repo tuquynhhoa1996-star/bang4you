@@ -178,7 +178,7 @@ var Core = (function () {
       'kr doc thiet': 'Phương'
     },
     '4Y': {
-      'vinaconex': 'Linh', 'quan doi htlo': 'Linh', 'quan doi': 'Linh', '471': 'Linh', 'nguyen trai': 'Linh', 'nghi phu ii': 'Linh', 'nghi phu 2': 'Linh', 'nguyen truong to': 'Linh', 'thsp nghe an': 'Linh',
+      'vinaconex': 'Linh', 'quan doi htlo': 'Linh', 'quan doi': 'Linh', '471': 'Linh', 'nguyen trai': 'Linh', 'nghi phu ii': 'Linh', 'nghi phu 2': 'Linh', 'nguyen truong to': 'Linh', 'thsp nghe an': 'Linh', 'e60 cua vinaconex': 'Linh', 'e60 vinaconex': 'Linh',
       'trung long': 'Hồng Việt', '34a kim dong': 'Hồng Việt', 'kim dong': 'Hồng Việt', 'cua lo': 'Hồng Việt', 'cs cua lo': 'Hồng Việt', 'ki thuat 3': 'Hồng Việt', 'ky thuat 3': 'Hồng Việt', 'dai hoc vinh': 'Hồng Việt', 'cs dh vinh': 'Hồng Việt', 'cs dai hoc vinh': 'Hồng Việt', 'dau may': 'Hồng Việt'
     } // 11/11/2026 chi Hoa: 4YOU Linh + Hồng Việt
   };
@@ -188,9 +188,14 @@ var Core = (function () {
     k = k.replace(/^dh /, 'dai hoc ').replace(/^ntdtp$|^nha thi dau$|^ntd tp$/, 'nha thi dau tp').replace(/^thcs (hong son|hung binh|ben thuy)$/, '$1').replace(/^(kem rieng|kr) /, 'kr ');
     return k;
   };
+  // 11/11/2026 chi Hoa: 4YOU Kem rieng = sale chot cham + tai ki; Trang Bui, Xuan An da dong (chi luu de tim)
+  C.KR_THEO_SALE_CHOT = { '4Y': 1 };
+  C.CS_DONG = { '4Y': { 'trang bui': 1, 'xuan an': 1 } };
+  C.daDong = function (brand, coSo) { return !!(C.CS_DONG[brand] || {})[C.csKey(coSo)]; };
   C.phuTrach = function (brand, coSo, lop) {
     var m = C.PHAN_CONG[brand] || {}, k = C.csKey(coSo); if (!k) return '';
     var l = noDau(lop).replace(/\s+/g, ' ').trim();
+    if (C.KR_THEO_SALE_CHOT[brand] && (k === 'kem rieng' || k.indexOf('kr ') === 0 || l.indexOf('kem rieng') >= 0)) return '';
     return m[k + '|' + l] || m[k] || '';
   };
   // sale lo dong 3.26: phu trach co so, khong co thi SALE GOI tren dong
@@ -278,6 +283,7 @@ var Core = (function () {
         var q = reten[j], kq = noDau(cell(q, col(hr, rc.name))) + '|' + C.normPhone(raw(q, col(hr, rc.phone)));
         if (sauChot[kq] > j) continue;
         if (cell(q, col(hr, rc.name)) === '' && cell(q, col(hr, rc.phone)) === '') continue;
+        if (C.daDong(brand, cell(q, col(hr, rc.base)))) continue; // co so da dong: chi tim kiem, khong vao Tai tuc
         var sc = C.saleTT(brand, hr, q);
         if (!canSee(user, sc)) continue;
         var cl2 = N(cell(q, col(hr, rc.close))), stt = N(cell(q, col(hr, rc.status)));
