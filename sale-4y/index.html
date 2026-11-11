@@ -1018,6 +1018,32 @@ var Core = (function () {
     return best ? { han: best, dong: dong } : null;
   };
   C.TAI_KI_THANG = 1;
+  // 11/11/2026 chi Hoa: bao TRUOC khi sale nhap - be quay lai thi nhap o dau (cung luat laTaiKi, dd/mm/yy)
+  C.huongQuayLai = function (han, today) {
+    var td = C.parseDate(today); if (!han || !td) return null;
+    var n = C.dayNum(td), het = C.addMonths(han, C.TAI_KI_THANG), f = function (o) { return pad(o.d) + '/' + pad(o.m) + '/' + String(o.y).slice(-2); };
+    if (n <= C.dayNum(han)) return null;
+    if (n <= C.dayNum(het)) return { loai: 'tk', text: 'Hết hạn ' + f(han) + '. Đóng tiền đến hết ' + f(het) + ' là TÁI KÍ: nhập ở mục Tái tục (3.26).' };
+    return { loai: 'moi', text: 'Hết hạn ' + f(han) + ', đã quá 1 tháng: là KHÁCH MỚI, nhập ở + Data mới (1.26).' };
+  };
+  // gan nhan cho ca danh sach: lap chi muc SDT 1 lan (danh sach 1.26 vai nghin dong), cung luat voi hanCuoi
+  C.ganQuayLai = function (brand, list, reten, today) {
+    if (!list || !list.length || !reten || reten.length < 2) return list;
+    var rc = C.BRANDS[brand].reten, h = C.header(reten[0]), pc = col(h, rc.phone), nc = col(h, rc.name), ec = col(h, rc.endExt), kc = col(h, rc.end), idx = {};
+    if (pc < 0) return list;
+    for (var i = 1; i < reten.length; i++) {
+      var r = reten[i], sd = C.normPhone(raw(r, pc)); if (!sd) continue;
+      var e = C.parseDate(cell(r, ec)) || C.parseDate(cell(r, kc)); if (!e) continue;
+      (idx[sd] = idx[sd] || []).push({ t: cell(r, nc) ? noDau(cell(r, nc)) : '', e: e });
+    }
+    list.forEach(function (x) {
+      var sdt = C.normPhone(x.sdt || ''), l = sdt && idx[sdt]; if (!l || x.quayLai) return;
+      var t = x.ten ? noDau(x.ten) : '', best = null;
+      l.forEach(function (o) { if (t && o.t && o.t !== t) return; if (!best || C.dayNum(o.e) > C.dayNum(best)) best = o.e; });
+      var q = best ? C.huongQuayLai(best, today) : null; if (q) x.quayLai = q;
+    });
+    return list;
+  };
   C.laTaiKi = function (han, ngayTien) { return C.dayNum(ngayTien) <= C.dayNum(C.addMonths(han, C.TAI_KI_THANG)); };
   C.addMonths = function (o, n) {
     var y = o.y + Math.floor((o.m - 1 + n) / 12), m = (o.m - 1 + n) % 12 + 1, last = new Date(Date.UTC(y, m, 0)).getUTCDate();
@@ -2793,9 +2819,9 @@ function demoCall(p) {
         if (p.act === 'tuyChon') { var o = Core.options(b, d.misc, d.data); if (!u.leader) o.sale = [u.saleName]; o.tt = DEMO_TT; o.nguoiLap = [{ ten: 'Bùi Thị Lệ Quyên', pb: 'BR' }, { ten: 'Phan Thị Thanh Hiền', pb: 'BR' }, { ten: 'Trần Thị Minh Phương', pb: 'BĐ' }]; o.giai = Core.giaiGoiY(b, d.sk, o.coSo); o.giai.payMethod = o.payMethod; return ok(o); }
         if ((p.act === 'capNhatTaiTuc' || p.act === 'capNhat') && p.baoPhi && p.dk) d.bp.forEach(function (r) { if (r.so === p.baoPhi && r.tt === 'Chờ chuyển') r.tt = 'Đã thu'; });
         if (p.act === 'capNhatTaiTuc') { var pt = Core.planTaiTuc(b, d.reten, u, Number(p.row), p.exp, p.ch, DEMO_TT, today, p.dk); if (!pt.ok) return ok({ ok: false, loi: pt.errors }); d.reten = Core.apply(d.reten, pt); var sr2 = p.dk ? Core.dkNguon(b, 'reten', d.reten, Number(p.row)) : null, tn2 = { soTien: p.ch.soTien, ngayTien: p.ch.ngayTien, hinhThucTien: p.ch.hinhThucTien }, ph2 = p.dk ? demoKho(b, Core.phieuThu(b, sr2, tn2, p.dk, '', u, today), sr2, tn2, p.dk, 'demo') : null; return ok({ ok: true, log: pt.log, phieu: ph2, thongBao: 'DEMO: đã lưu thử trong bộ nhớ trình duyệt.' }); }
-        if (p.act === 'timHV') return ok(Core.timHV(d.hv, p.q, 15));
+        if (p.act === 'timHV') return ok(Core.ganQuayLai(b, Core.timHV(d.hv, p.q, 15), d.reten, today));
         if (p.act === 'timKhac') return ok(Core.timKhac(b, d.data, u, p.q, today, 10, d.reten));
-        if (p.act === 'timKhach') return ok(Core.timKhach(b, d.data, u, p.q, 30).concat(Core.locDs(Core.dsTaiTuc(b, d.reten, u, today), p.q, 30)));
+        if (p.act === 'timKhach') return ok(Core.ganQuayLai(b, Core.timKhach(b, d.data, u, p.q, 30).concat(Core.locDs(Core.dsTaiTuc(b, d.reten, u, today), p.q, 30)), d.reten, today));
         if (p.act === 'khoPhieu') return ok({ ds: d.kho.slice().reverse().map(function (r) { return { so: r.so, phieu: r.phieu, f: r.f, tien: r.tien, giai: !!r.phieu.giai, suaLan: r.suaLan, today: r.today }; }) });
         if (p.act === 'dkGiai') { var ep0 = Core.kiemPhieuThu(b, { nguoiLap: p.f.nguoiLap }); if (ep0.length) return ok({ ok: false, loi: ep0 }); var pg = Core.planGiai(b, d.sk, p.f, u, today); if (!pg.ok) return ok({ ok: false, loi: pg.errors, trungGiai: pg.trungGiai || null });
           var rw = d.sk[0].map(function () { return ''; }); Object.keys(pg.vals).forEach(function (j) { rw[j] = String(pg.vals[j]); }); d.sk.push(rw);
@@ -2809,8 +2835,8 @@ function demoCall(p) {
           if (rc.phieu.muaDo) { var kd = Core.kiemMuaDo(b, Object.assign({}, rc.src, mm.f, { ngayTien: mm.tien.ngayTien, hinhThucTien: mm.tien.hinhThucTien }), u, today); if (!kd.ok) es = es.concat(kd.errors); else mm.tien.soTien = kd.tien.soTien; es = es.filter(function (x, i, a) { return a.indexOf(x) === i; }); } if (!Core.soTien(mm.tien.soTien)) es.push('Cần số tiền.'); if (es.length) return ok({ ok: false, loi: es });
           var np = Core.phieuThu(b, rc.src, mm.tien, mm.f, rc.so, u, rc.today); np.suaLan = rc.suaLan + 1; np.suaNgay = today; rc.phieu = np; rc.suaLan = np.suaLan; rc.f = mm.f; rc.tien = mm.tien;
           return ok({ ok: true, phieu: np, log: ['DEMO: đã sửa phiếu'], canhBao: null }); }
-        if (p.act === 'dsKhach') return ok(Core.dsKhach(b, d.data, u));
-        if (p.act === 'dsTaiTuc') return ok(Core.dsTaiTuc(b, d.reten, u, today));
+        if (p.act === 'dsKhach') return ok(Core.ganQuayLai(b, Core.dsKhach(b, d.data, u), d.reten, today));
+        if (p.act === 'dsTaiTuc') return ok(Core.ganQuayLai(b, Core.dsTaiTuc(b, d.reten, u, today), d.reten, today));
         var opt = Core.options(b, d.misc, d.data), plan;
         if (p.act === 'themHocThu') plan = Core.planThemHocThu(b, d.data, u, p.f, opt, today);
         else plan = Core.planCapNhat(b, d.data, u, Number(p.row), p.exp, p.ch, opt, today);
@@ -2901,13 +2927,15 @@ function contact(x) {
   if (!l.length) return x.sdt ? '<span class="sub">SĐT sai định dạng: ' + esc(x.sdt) + '</span>' : '';
   return l.slice(0, 2).map(function (p) { var n = l.length > 1 ? ' ' + (p.nhan || p.sdt.slice(-3)) : ''; return '<a href="tel:' + p.sdt + '">Gọi' + esc(n) + '</a><a href="https://zalo.me/' + p.sdt + '" target="_blank" rel="noopener">Zalo' + esc(n) + '</a>'; }).join('');
 }
+// 11/11/2026: be quay lai - bao truoc nhap o dau (Core.huongQuayLai)
+function qlHtml(x) { var q = x && x.quayLai; if (!q) return ''; var tk = q.loai === 'tk'; return '<div class="sub" style="margin:4px 0;padding:6px 8px;border-radius:8px;font-weight:600;background:' + (tk ? '#ecfdf5;color:#047857' : '#fff7ed;color:#c2410c') + '">' + esc(q.text) + '</div>'; }
 function card(x, kind) {
   if (kind === 'bp') return cardBP(x);
   var tag = '<span class="tag ' + (kind === 'tt' && (x.conLai < 0 || x.hetBuoi) ? 'red' : kind === 'hn' ? 'grn' : '') + '">' + esc(x.lyDo) + '</span>';
   var sub = [x.sdt, x.coSo, x.sale ? 'Sale: ' + x.sale : 'Chưa có sale'].filter(Boolean).join(' · ');
   var extra = kind === 'tt' ? '<div class="sub">' + esc(x.khoa) + ' · ' + (x.han ? 'hạn ' + esc(x.han) : 'chưa có hạn') + '</div>' + ([x.lienHe, x.chot].filter(Boolean).length || x.ngayGoi ? '<div class="sub">' + esc([x.ngayGoi ? 'Gọi gần nhất ' + x.ngayGoi : 'Chưa gọi', x.lienHe, x.chot].filter(Boolean).join(' · ')) + '</div>' : '') + (x.note ? '<div class="note">' + esc(String(x.note).split('\n').slice(-2).join('\n')) + '</div>' : '') : (x.ngayHocThu && x.ngayHocThu.length ? '<div class="sub">Học thử: ' + esc(x.ngayHocThu.join(', ')) + (x.hocThu ? ' · ' + esc(x.hocThu) : '') + '</div>' : '');
   var b = '<div class="btns">' + contact(x) + (kind === 'k' ? '<button onclick="giaiTu(' + x.row + ')">Đăng ký giải</button>' : '') + (kind !== 'tt' ? '<button class="pri" onclick="openUpd(' + x.row + ',\'hn\')">Cập nhật</button>' : '<button class="pri" onclick="openTT(' + x.row + ')">Cập nhật</button>') + '</div>';
-  return '<div class="card"><div class="t"><div class="n">' + esc(x.ten || '(chưa có tên bé)') + '</div></div>' + tag + '<div class="sub">' + esc(sub) + '</div>' + extra + (x.note && kind !== 'tt' ? '<div class="note">' + esc(x.note) + '</div>' : '') + b + '</div>';
+  return '<div class="card"><div class="t"><div class="n">' + esc(x.ten || '(chưa có tên bé)') + '</div></div>' + tag + qlHtml(x) + '<div class="sub">' + esc(sub) + '</div>' + extra + (x.note && kind !== 'tt' ? '<div class="note">' + esc(x.note) + '</div>' : '') + b + '</div>';
 }
 function sect(title, list, kind, total) {
   var more = total > list.length ? ' <span class="sub">(hiện ' + list.length + '/' + total + ')</span>' : '';
@@ -3033,7 +3061,7 @@ function hvList(q) {
 }
 function hvCard(x) {
   var dang = Core.hvDangHoc(x), i = (st.kqHV || []).indexOf(x);
-  return '<div class="card"><b>' + esc(x.ten) + '</b>' + (x.ma ? ' <span class="sub">' + esc(x.ma) + '</span>' : '') + '<div class="sub">' +
+  return '<div class="card"><b>' + esc(x.ten) + '</b>' + (x.ma ? ' <span class="sub">' + esc(x.ma) + '</span>' : '') + qlHtml(x) + '<div class="sub">' +
     [x.sdt ? '<a href="tel:' + esc(x.sdt) + '">' + esc(x.sdt) + '</a>' + (x.sdt2 ? ' · ' + esc(x.sdt2) : '') : 'chưa có SĐT', esc(x.coSo), x.lop ? 'Lớp ' + esc(x.lop) : '', x.ns ? 'Sinh ' + esc(x.ns) : ''].filter(Boolean).join(' · ') + '</div>' +
     '<div class="sub"><b style="color:' + (dang ? '#15803d' : '#64748b') + '">' + esc(x.tt) + '</b>' + (x.khoa ? ' · ' + esc(x.khoa) : '') + (x.han ? ' · Hạn ' + esc(ngNgan(x.han)) : '') + '</div>' +
     (dang ? '<div class="sub" style="color:#b45309">Bé đang học nhưng chưa có dòng ở file 3.26 nên app chưa thu tái kí được. Báo HCNS thêm bé vào 3.26.</div>'
