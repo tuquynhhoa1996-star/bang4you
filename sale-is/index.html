@@ -1246,10 +1246,10 @@ var Core = (function () {
     put(c.payDate, pds); if (bd) put(c.start, C.fmtDate(bd)); if (kt) put(c.end, C.fmtDate(kt)); put(c.payMethod, pm);
     // 2 cot ten NOTE (4Y): ghi vao cot NOTE dau tien
     put(c.note, notes.join('; '));
-    // 09/11/2026 chi Hoa: dong MUA do dung khong can HCNS xac nhan -> khong ghi cot HCNS XAC NHAN
-    var mk = C.dkMarkCol(dk[0]); if (!muaDo) vals[mk.col] = C.DK_CHO;
-    log.push('Danh sách đăng kí: ' + src.ten + ' · ' + khoa + ' · ' + C.tien(muaDo ? C.doMua(brand, f).reduce(function (a, x) { return a + x.tien; }, 0) : fee) + 'đ · ' + pds + (muaDo ? '' : ' · chờ HCNS xác nhận'));
-    return { ok: true, vals: vals, mark: muaDo ? null : mk, log: log, khoa: khoa };
+    // 11/11/2026 chi Hoa: phieu mua do (dong phuc, tat...) VAN can HCNS xac nhan de vao doanh thu P&L (bo luat @45)
+    var mk = C.dkMarkCol(dk[0]); vals[mk.col] = C.DK_CHO;
+    log.push('Danh sách đăng kí: ' + src.ten + ' · ' + khoa + ' · ' + C.tien(muaDo ? C.doMua(brand, f).reduce(function (a, x) { return a + x.tien; }, 0) : fee) + 'đ · ' + pds + ' · chờ HCNS xác nhận');
+    return { ok: true, vals: vals, mark: mk, log: log, khoa: khoa };
   };
   // goi y khoa hoc: gia tri hay dung nhat trong 600 dong cuoi file DK
   C.dkKhoaGoiY = function (brand, dk) {
@@ -3779,7 +3779,7 @@ function tongDo(p) {
 function muaDoView() {
   var o = st.opt, lead = st.me.brands[st.brand].leader;
   return '<div class="btns" style="margin-top:0"><button onclick="setTab(\'phieu\')">‹ Kho phiếu thu</button></div><h3 style="margin-top:6px">Phiếu mua đồ (không kèm học phí)</h3>' +
-    '<div class="sub">Dùng khi khách chỉ mua đồ, không đăng kí học. App thêm 1 dòng vào danh sách đăng kí (khoá học ghi "MUA ...", không có học phí, tiền ghi vào cột từng món) và lập phiếu thu gửi phụ huynh. Khách vừa đăng kí học vừa mua đồ thì vẫn ghi ở mục Các khoản mua thêm khi chốt.</div>' +
+    '<div class="sub">Dùng khi khách chỉ mua đồ, không đăng kí học. App thêm 1 dòng vào danh sách đăng kí (khoá học ghi "MUA ...", không có học phí, tiền ghi vào cột từng món, chờ HCNS xác nhận bill như phiếu học phí) và lập phiếu thu gửi phụ huynh. Khách vừa đăng kí học vừa mua đồ thì vẫn ghi ở mục Các khoản mua thêm khi chốt.</div>' +
     '<label>Tìm học sinh có sẵn để điền nhanh</label><input id="m_q" placeholder="tên bé hoặc SĐT" autocomplete="off" oninput="onMq(this.value)"><div id="m_goi"></div>' +
     '<label>Tên học sinh / người mua *</label><input id="m_ten"><div class="row2"><div><label>SĐT phụ huynh *</label><input id="m_sdt" inputmode="tel" placeholder="09xx..."></div><div><label>Cơ sở</label>' + selCs('m_cs', o.coSo, '') + '</div></div>' +
     doHtml('m') +
