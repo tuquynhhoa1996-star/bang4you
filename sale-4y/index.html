@@ -1571,7 +1571,7 @@ var Core = (function () {
   // Nguon: file 2.26 (tinh trang BAO LUU). 2.26 khong co cot sale nen sale = sale phu trach co so (C.phuTrach); co so chua giao
   // thi chi quan ly thay. Lich su cham soc (tab BAO LUU - CHAM SOC trong file NHAT KY) chi THEM dong, khong ghi de.
   C.laBaoLuu = function (x) { return /^BẢO LƯU/.test(NC(x && x.tt)); };
-  C.baoLuuSale = function (brand, x) { return C.phuTrach(brand, x.coSo, x.lop); };
+  C.baoLuuSale = function (brand, x) { var k = C.csKey(x.coSo); return (k === 'doi tuyen' ? C.phuTrach(brand, x.lop, '') : '') || C.phuTrach(brand, x.coSo, x.lop); }; // tab 'ĐỘI TUYỂN' trong 2.26: lop ghi 'Tuyển U16' la ten co so ben 3.26
   // ls: [{key, ngay (dd/mm/yyyy), nguoi, note, ts}] ; tra ve be bao luu trong pham vi user, xep: chua goi truoc, roi goi lau nhat truoc
   C.baoLuuDs = function (brand, hv, user, ls, today) {
     var td = C.parseDate(today), tn = C.dayNum(td), yr = td.y, seen = {}, hist = {}, out = [];
@@ -2879,6 +2879,7 @@ function demoInit() {
 }
 function demoHV(b) { var hd = ['STT', 'TÊN HỌC SINH', 'MÃ HV', 'NGÀY SINH', 'LỚP', 'TRƯỜNG HỌC', 'SĐT LIÊN HỆ', 'KHÓA HỌC', 'NOTE', 'TÌNH TRẠNG KH', 'NGÀY BẮT ĐẦU', 'NGÀY KẾT THÚC', 'HẠN SAU TẾT 2026', 'SỐ BUỔI CÒN LẠI'], t = {};
   t[b === 'IS' ? 'ĐH VINH' : 'BĐ Trung Long'] = [hd, ['1', 'Phan Gia Bảo', b + '-00901', '12/03/2016', 'Cấp 1', 'TH Hưng Dũng', '0915777001', 'KH 3 THÁNG', '', 'Nghỉ luôn', '01/03/2026', '01/06/2026', '08/06/2026'], ['2', 'Trịnh Minh Khôi', b + '-00902', '05/09/2015', 'Cấp 1', 'TH Lê Mao', '0915777002', 'KH 6 THÁNG', '', 'Đang học', '01/09/2026', '01/03/2027', '10/03/2027'], ['3', 'Lê Bảo An', b + '-00903', '2017', 'Cấp 1', '', '0915777003', '', '', 'Đã học thử', '', '', '']];
+  t[Object.keys(t)[0]].push(['4', 'Đào Gia Hưng', b + '-00904', '11/05/2016', 'Cấp 1', 'TH Hưng Dũng', '0915777004', 'KH 3 THÁNG', '', 'Bảo lưu', '01/08/2026', '01/11/2026', '', '4'], ['5', 'Vũ Minh Quân', b + '-00905', '02/02/2015', 'Cấp 2', 'THCS Hưng Bình', '0915777005', 'KH 6 THÁNG', '', 'Bảo lưu', '01/06/2026', '01/12/2026', '', '9']);
   t[Object.keys(t)[0]].push(['3', 'Hồ Bảo Nam', b + '-00903', '20/04/2015', 'Cấp 2', 'THCS Hưng Bình', '0915777003', 'KH 6 THÁNG', '', 'Đang học', '01/09/2026', '20/12/2026', '20/12/2026', '0']); // 11/11/2026: be het buoi truoc han
   return Core.hv226(t); }
 function demoSk(hd, k, ten, sdt, giai, tien) { var r = hd.map(function () { return ''; }); r[hd.indexOf(k.name)] = ten; r[hd.indexOf(k.phone)] = sdt; r[hd.indexOf(k.giai)] = giai; r[hd.indexOf(k.amount)] = tien; r[hd.indexOf(k.source)] = 'Học viên'; return r; }
@@ -3173,9 +3174,10 @@ function blKey() { return st.brand + '|' + (st.loc || ''); }
 function taiBl(nen) {
   var k = blKey(), lan = st.blLan = (st.blLan || 0) + 1;
   if (!nen && st.tab === 'baoluu' && st.blKey !== k) { st.bl = null; render(); }
-  call({ act: 'baoLuu' }).then(function (r) { if (lan !== st.blLan) return; st.bl = r.ds || []; st.blKey = k; st.blNgay = r.ngay; st.blLoi = ''; if (st.tab === 'baoluu') render(); else if (st.tab === 'homnay' && $('#hnBody')) $('#hnBody').innerHTML = hnBody(); })
+  call({ act: 'baoLuu' }).then(function (r) { if (lan !== st.blLan) return; st.bl = r.ds || []; st.blKey = k; st.blNgay = r.ngay; st.blLoi = ''; if (st.tab === 'baoluu') { if (blDangGo()) return; render(); } else if (st.tab === 'homnay' && $('#hnBody')) $('#hnBody').innerHTML = hnBody(); })
     .catch(function (e) { if (lan !== st.blLan || nen) return; st.blLoi = e.message; if (st.tab === 'baoluu') render(); });
 }
+function blDangGo() { var a = document.activeElement; if (a && a.tagName === 'TEXTAREA') return true; return [].some.call(document.querySelectorAll('textarea[id^=blT]'), function (t) { return t.value; }); } // dang go note thi khong ve lai man hinh
 function moBaoLuu() { st.tab = 'baoluu'; render(); taiBl(); window.scrollTo(0, 0); }
 function blNgayNay() { return st.blNgay || (st.hn && st.hn.ngay) || new Date().toLocaleDateString('en-GB'); }
 function blCard(x, i) {
