@@ -1023,7 +1023,9 @@ var Core = (function () {
   // Cac khoan mua them (05/11/2026 chi Hoa: tach rieng tren phieu thu). col = cot tien trong file DS dang ki
   C.DO = {
     IS: [{ k: 'dongPhuc', ten: 'Đồng phục', col: 'ĐỒNG PHỤC' }, { k: 'tat', ten: 'Tất', col: 'TÚI RÚT/TẤT/LƯỚI RỔ' }, { k: 'tuiRut', ten: 'Túi rút', col: 'TÚI RÚT/TẤT/LƯỚI RỔ' },
-      { k: 'bong', ten: 'Bóng', col: 'BÓNG' }, { k: 'giay', ten: 'Giày bóng rổ', col: 'GIÀY BÓNG RỔ' }, { k: 'luoi', ten: 'Lưới rổ', col: 'TÚI RÚT/TẤT/LƯỚI RỔ' }],
+      { k: 'bong', ten: 'Bóng', col: 'BÓNG' }, { k: 'giay', ten: 'Giày bóng rổ', col: 'GIÀY BÓNG RỔ' }, { k: 'luoi', ten: 'Lưới rổ', col: 'TÚI RÚT/TẤT/LƯỚI RỔ' },
+      // 12/11/2026 chi Hoa: ao dai tay = dong phuc dai tay, sale ban duoc; IS khong co cot rieng -> ghi vao cot ĐỒNG PHỤC (P&L tinh dong phuc)
+      { k: 'aoDaiTay', ten: 'Áo dài tay', col: 'ĐỒNG PHỤC' }],
     '4Y': [{ k: 'dongPhuc', ten: 'Đồng phục', col: 'ĐỒNG PHỤC' }, { k: 'tat', ten: 'Tất', col: 'MUA TẤT' }, { k: 'tuiRut', ten: 'Túi rút', col: 'MUA TÚI RÚT' },
       { k: 'bong', ten: 'Bóng', col: 'BÓNG' }, { k: 'giay', ten: 'Giày', col: 'MUA GIÀY' }, { k: 'mu', ten: 'Mũ', col: 'MŨ' }, { k: 'aoDaiTay', ten: 'Áo dài tay', col: 'MUA ÁO DÀI TAY' }]
   };
@@ -1315,6 +1317,8 @@ var Core = (function () {
     put(c.phone, src.sdt); put(c.base, src.coSo); put(c.course, khoa);
     if (!muaDo) { put(c.kind, src.loai); put(c.fee, fee); }
     if (so(f.hpChuyen)) put(c.feeMove, so(f.hpChuyen));
+    // 12/11/2026: IS ghi ao dai tay chung cot ĐỒNG PHỤC -> ghi them so tien vao NOTE de HCNS tach duoc
+    (C.DO[brand] || []).forEach(function (d) { if (d.k === 'aoDaiTay' && d.col === 'ĐỒNG PHỤC' && so(f.do && f.do[d.k])) notes.splice(notes.length - 1, 0, 'áo dài tay ' + C.tien(so(f.do[d.k])) + 'đ (trong cột đồng phục)'); });
     var doCol = {}; (C.DO[brand] || []).forEach(function (d) { var v = so(f.do && f.do[d.k]) || (d.k === 'dongPhuc' ? so(f.dongPhuc) : 0); if (v) doCol[d.col] = (doCol[d.col] || 0) + v; });
     Object.keys(doCol).forEach(function (cn) { if (col(h, cn) >= 0) put(cn, doCol[cn]); else notes.push(cn.toLowerCase() + ' ' + C.tien(doCol[cn]) + 'đ'); });
     if (T(f.size)) { if (c.size) put(c.size, T(f.size)); else if (c.noteDp) put(c.noteDp, 'size ' + T(f.size)); }
