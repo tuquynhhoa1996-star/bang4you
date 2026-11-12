@@ -41,7 +41,7 @@ textarea{min-height:64px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:8p
 .login{max-width:340px;margin:12vh auto;padding:0 16px}.login h2{color:#0b3d91}
 .locs{display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;margin-bottom:2px}.locs button{flex:none;padding:7px 12px;border-radius:18px;border:1px solid #cfd6e2;background:#fff;color:#334;font-weight:600;font-size:13px}.locs button.on{background:#0b3d91;border-color:#0b3d91;color:#fff}
 .hide{display:none}.goiy{background:#fff;border:1px solid #cfd6e2;border-radius:9px;margin-top:4px}.goiy div{padding:9px 10px;border-bottom:1px solid #eef}.goiy div:last-child{border:0}
-.tag.org{background:#fff1d6;color:#8a5a00}.spin{text-align:center;padding:30px;color:#667}
+.tag.org{background:#fff1d6;color:#8a5a00}.kn{display:block;background:#fff;border:2px solid #dfe4ec;border-radius:11px;padding:9px 10px;margin:6px 0;cursor:pointer}.kn.on{border-color:#0b3d91;background:#eef3fb}.kn input{width:auto;margin:0 6px 0 0;vertical-align:-2px}.hoanNhac{background:#fff7ed;color:#9a3412;border-radius:9px;padding:9px 10px;margin:6px 0 4px;font-size:13px;font-weight:600}.spin{text-align:center;padding:30px;color:#667}
 .tk{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.tk th,.tk td{padding:6px 5px;border-bottom:1px solid #e6e9ef;text-align:right;white-space:nowrap}.tk th:first-child,.tk td:first-child{text-align:left;position:sticky;left:0;background:#fff}.tk thead th{background:#eef2f8;color:#334;font-weight:600}.tk tr.tg td{font-weight:700;background:#f7f9fc}.tkw{overflow-x:auto;border-radius:10px;border:1px solid #e1e5ec;margin-bottom:12px}.tkg{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}.tkg div{background:#fff;border-radius:10px;padding:9px 10px;border:1px solid #e1e5ec}.tkg b{display:block;font-size:20px;color:#0b3d91}.tkg span{font-size:12px;color:#556}.tkh{font-size:14px;margin:12px 0 6px;color:#223}
 </style></head><body>
 <div id="app"></div>
@@ -214,7 +214,8 @@ var Core = (function () {
       lienHe: cell(r, col(h, d.contact)), chot: cell(r, col(h, d.close)), hocThu: cell(r, col(h, d.trialSt)),
       ngayGoi: cell(r, col(h, d.call)), ngayCham: cell(r, col(h, d.care)), ngaySinh: cell(r, col(h, d.dob)),
       lop: cell(r, col(h, d.cls)), truong: cell(r, col(h, d.school)), lyDo: cell(r, col(h, d.reason)), nguon: cell(r, col(h, d.source)),
-      soTien: cell(r, col(h, d.amount)), ngayHocThu: trials
+      soTien: cell(r, col(h, d.amount)), ngayHocThu: trials,
+      ngayTien: cell(r, col(h, d.payDate)), hinhThuc: cell(r, col(h, d.form)) // 12/11/2026: phieu hoan hoc phi can ngay nop + hinh thuc
     };
   }
   function lastTrial(o, year) {
@@ -345,7 +346,8 @@ var Core = (function () {
       khoa: cell(q, col(hr, rc.course)), bd: cell(q, col(hr, rc.start)), sale: sc, han: han ? C.fmtDate(han) : '', conLai: han ? left : null,
       lyDo: !han ? 'Chưa có hạn' : left < 0 ? 'Quá hạn ' + (-left) + ' ngày' : left === 0 ? 'Hết hạn hôm nay' : 'Còn ' + left + ' ngày',
       cotHan: cell(q, col(hr, rc.endExt)) ? 'sau gia hạn' : 'gốc (chưa có cột sau gia hạn)', chot: cell(q, col(hr, rc.close)),
-      lienHe: cell(q, col(hr, rc.contact)), trangThai: cell(q, col(hr, rc.status)), note: raw(q, col(hr, rc.note)).slice(-200), ngayGoi: cell(q, col(hr, rc.care)) || cell(q, col(hr, rc.firstCall)) };
+      lienHe: cell(q, col(hr, rc.contact)), trangThai: cell(q, col(hr, rc.status)), note: raw(q, col(hr, rc.note)).slice(-200), ngayGoi: cell(q, col(hr, rc.care)) || cell(q, col(hr, rc.firstCall)),
+      soTien: cell(q, col(hr, rc.amount)), ngayTien: cell(q, col(hr, rc.payDate)), saleGoi: cell(q, col(hr, rc.sale)) }; // 12/11/2026: phieu hoan hoc phi (sale chot goc = SALE GOI that, khong phai phu trach)
   }
   // 06/11/2026 Hong Viet: hoc sinh tai dang ki TRUOC HAN hoac BO SUNG HOC PHI khong tim thay de viet phieu thu
   // (danh sach Hom nay chi lay -7..+14 ngay va bo qua dong da chot). Tra ve MOI dong 3.26 trong pham vi sale de o tim kiem tim duoc.
@@ -1485,7 +1487,10 @@ var Core = (function () {
   // Tra ve { ngay:[...], sale:[{ten, ngay:{'dd/mm/yyyy':{...}}, tong:{...}}], tong:{...} }
   C.TK_CHI_SO = ['data', 'cham126', 'cham326', 'hocThu', 'denHT', 'chotHT', 'chot', 'tienChot', 'taiKi', 'tienTaiKi',
     // 07/11/2026 chi Hoa: them cham soc hoc vien dang hoc (file 2.26 SALE CHAM SOC, nut Ghi tren bang dieu hanh) va giai dau (tab DATA SU KIEN)
-    'chamHV', 'hvGoiDuoc', 'hvKhongNghe', 'hvHetBuoi', 'hvVang', 'hvHetKhoa', 'hvKhongDeu', 'giaiGoi', 'giai', 'tienGiai'];
+    'chamHV', 'hvGoiDuoc', 'hvKhongNghe', 'hvHetBuoi', 'hvVang', 'hvHetKhoa', 'hvKhongDeu', 'giaiGoi', 'giai', 'tienGiai',
+    // 12/11/2026 chi Hoa: hoan hoc phi "Đã hoàn" tru vao sale chot goc, theo Ngay hoan tien (hoanChot: phan khach moi, hoanTaiKi: phan tai ki)
+    'hoan', 'tienHoan', 'hoanChot', 'hoanTaiKi'];
+  C.TK_HOAN = ['hoan', 'tienHoan', 'hoanChot', 'hoanTaiKi']; // tinh lai tu tab HOAN HOC PHI moi lan, khong lay so lon hon voi ban chup
   C.CS_LOAI = { sap_het_buoi: 'hvHetBuoi', vang_lau: 'hvVang', sap_het_khoa: 'hvHetKhoa', khong_deu: 'hvKhongDeu' };
   C.tenGhiCS = function (t) { t = T(t); var b = t.replace(/^(chị|chi|anh|em|cô|thầy|c|a)\s+/i, ''); return b || t; };
   function tkRong() { var o = {}; C.TK_CHI_SO.forEach(function (k) { o[k] = 0; }); return o; }
@@ -1581,6 +1586,15 @@ var Core = (function () {
         if (trong(pz) && (N(cell(z, col(hs, kc.close))) === N(C.SK_CLOSE) || tz > 0)) { var q5 = o(sz, pz); q5.giai++; q5.tienGiai += tz; }
       }
     }
+    if (them.hoan && them.hoan.length) { // 12/11/2026: phieu hoan hoc phi (C.docHoan). Chi "Đã hoàn", theo Ngay hoan tien, tru sale chot GOC (cot M), khong phai sale lap
+      them.hoan.forEach(function (z) {
+        if (!z || z.brand !== brand || !C.laDaHoan(z)) return;
+        var dz = dn(z.ngayHoan); if (!trong(dz)) return;
+        if (!canSee(user, z.saleChot)) return;
+        var q6 = o(z.saleChot, dz), tz2 = +z.tien || 0; q6.hoan++; q6.tienHoan += tz2;
+        if (C.hoanTaiKi(z)) q6.hoanTaiKi += tz2; else q6.hoanChot += tz2;
+      });
+    }
     var ngay = []; for (var n = b; n >= a; n--) ngay.push(n);
     var tongAll = tkRong(), out = [];
     Object.keys(S).forEach(function (k) {
@@ -1590,7 +1604,15 @@ var Core = (function () {
       tkCong(tongAll, tg); out.push({ ten: ten, ngay: nd, tong: tg });
     });
     out.sort(function (x, y) { return C.tkViec(y.tong) - C.tkViec(x.tong) || (y.tong.tienChot + y.tong.tienTaiKi) - (x.tong.tienChot + x.tong.tienTaiKi); }); // xep theo tong khoi luong viec
-    return { brand: brand, tu: C.fmtDate(C.addDays({ y: 1970, m: 1, d: 1 }, a)), den: C.fmtDate(C.addDays({ y: 1970, m: 1, d: 1 }, b)), soNgay: b - a + 1, sale: out, tong: tongAll };
+    var res = { brand: brand, tu: C.fmtDate(C.addDays({ y: 1970, m: 1, d: 1 }, a)), den: C.fmtDate(C.addDays({ y: 1970, m: 1, d: 1 }, b)), soNgay: b - a + 1, sale: out, tong: tongAll };
+    return them.goc ? res : C.tkTruHoan(res); // them.goc: may chu giu tien goc de ghep ban chup, tru hoan sau khi ghep
+  };
+  // Doi tien chot / tai ki sang tien SAU KHI TRU hoan hoc phi; giu tien goc o tienChotGoc, tienTaiKiGoc. Goi 1 lan.
+  C.tkTruHoan = function (k) {
+    if (!k || k.daTruHoan) return k;
+    function tru(x) { if (!x) return; x.tienChotGoc = x.tienChot || 0; x.tienTaiKiGoc = x.tienTaiKi || 0; x.tienChot = x.tienChotGoc - (x.hoanChot || 0); x.tienTaiKi = x.tienTaiKiGoc - (x.hoanTaiKi || 0); }
+    tru(k.tong); (k.sale || []).forEach(function (s) { tru(s.tong); Object.keys(s.ngay || {}).forEach(function (n) { tru(s.ngay[n]); }); });
+    k.daTruHoan = true; return k;
   };
 
 
@@ -1628,6 +1650,126 @@ var Core = (function () {
     if (!be) errs.push('Không thấy bé này trong danh sách bảo lưu của bạn. Tải lại danh sách.');
     if (errs.length) return { ok: false, errors: errs };
     return { ok: true, key: f.key, ten: be.ten, sdt: be.sdt, coSo: be.coSo, ngay: C.fmtDate(ngay), note: note };
+  };
+
+  // ---------- PHIEU HOAN HOC PHI (12/11/2026 chi Hoa chot, BAN NHAP chua duyet) ----------
+  // Hoc phi da nop khong hoan; hoan la NGOAI LE. Sale lap de nghi tren App Sale (chi THEM dong, trang thai "Chờ chị duyệt").
+  // Chi chi Hoa duyet (bang dieu hanh, muc Tai chinh); Linh chuyen tien roi bam "Đã hoàn" + Ngay hoan tien. App Sale KHONG sua cot Q-T.
+  // Chi phieu "Đã hoàn" moi tru doanh so: tru SALE CHOT khoa goc (cot M), vao Ngay hoan tien; New tru tienChot, Retention tru tienTaiKi.
+  // Khong dong vao dong cu o 1.26 / 3.26 / DS dang ki.
+  C.HOAN_TAB = 'HOÀN HỌC PHÍ';
+  C.HOAN_HD = ['Mã phiếu', 'Thương hiệu', 'Thời gian lập', 'Sale lập', 'Tên học viên', 'SĐT', 'Cơ sở', 'File gốc', 'Khoá gốc', 'Số tiền gốc đã nộp',
+    'Ngày nộp gốc', 'Hình thức ĐK gốc', 'Sale chốt gốc (bị trừ)', 'Số tiền hoàn', 'Lý do', 'Trả bằng', 'Trạng thái', 'Người duyệt + thời gian',
+    'Ngày hoàn tiền', 'Người xác nhận hoàn', 'Ghi chú'];
+  C.HOAN_K = ['so', 'brand', 'tg', 'saleLap', 'ten', 'sdt', 'coSo', 'file', 'khoa', 'tienGoc', 'ngayNop', 'loai', 'saleChot', 'tien', 'lyDo', 'traBang',
+    'tt', 'duyet', 'ngayHoan', 'nguoiXN', 'ghiChu'];
+  C.HOAN_TT = { CHO: 'Chờ chị duyệt', DUYET: 'Chị đã duyệt', TU_CHOI: 'Chị từ chối', DA_HOAN: 'Đã hoàn' };
+  C.HOAN_TRA = ['CK', 'TM'];
+  C.laDaHoan = function (z) { return NC(z && z.tt) === NC(C.HOAN_TT.DA_HOAN); };
+  C.hoanTaiKi = function (z) { var l = noDau(z && z.loai); return l.indexOf('retention') === 0 || l.indexOf('tai ki') === 0 || l.indexOf('tai dang ki') === 0; };
+  function hoanDang(z) { var t = NC(z && z.tt); return t === NC(C.HOAN_TT.CHO) || t === NC(C.HOAN_TT.DUYET); } // dang cho xu ly: chua duyet hoac duyet roi chua chuyen tien
+  function hoanBo(z) { return NC(z && z.tt) === NC(C.HOAN_TT.TU_CHOI); }
+  function ngay4(s) { var p = C.parseDate(T(s)); return p ? C.fmtDate(p) : T(s); }
+  // Doc tab HOAN HOC PHI (dong 0 la tieu de) -> [{row, so, brand, ..., tien (so)}]. Tim cot theo ten tieu de, thieu thi theo thu tu A-U.
+  C.docHoan = function (rows) {
+    var out = []; if (!rows || rows.length < 2) return out;
+    var hc = rows[0].map(function (x) { return NC(x); }), ix = C.HOAN_HD.map(function (n, i) { var j = hc.indexOf(NC(n)); return j >= 0 ? j : i; });
+    for (var i = 1; i < rows.length; i++) {
+      var r = rows[i], z = { row: i + 1 };
+      C.HOAN_K.forEach(function (k, j) { z[k] = cell(r, ix[j]); });
+      if (!z.so && !z.ten) continue;
+      z.tienGoc = soTienO(z.tienGoc); z.tien = soTienO(z.tien);
+      out.push(z);
+    }
+    return out;
+  };
+  // Khoa da nop tu 1 dong Sheet (may chu doc lai, khong tin so lieu web gui)
+  C.khoaGocTuDong = function (brand, kind, rows, rowNo) {
+    var r = rows && rows[rowNo - 1]; if (!r || rowNo < 2) return null;
+    var h = C.header(rows[0]);
+    if (kind === 'data') {
+      var d = C.BRANDS[brand].data, fm = cell(r, col(h, d.form)), sl = cell(r, col(h, d.sale));
+      return { kind: 'data', row: rowNo, file: '1.26', ten: cell(r, col(h, d.name)), sdt: raw(r, col(h, d.phone)).trim(), coSo: cell(r, col(h, d.base)),
+        khoa: 'Khách mới' + (fm ? ' · ' + fm : ''), bd: '', tienGoc: soTienO(cell(r, col(h, d.amount))), ngayNop: ngay4(cell(r, col(h, d.payDate))),
+        loai: 'New', saleChot: sl, saleXem: sl };
+    }
+    var rc = C.BRANDS[brand].reten, bd = cell(r, col(h, rc.start)), sg = cell(r, col(h, rc.sale));
+    return { kind: 'reten', row: rowNo, file: '3.26', ten: cell(r, col(h, rc.name)), sdt: raw(r, col(h, rc.phone)).trim(), coSo: cell(r, col(h, rc.base)),
+      khoa: cell(r, col(h, rc.course)) + (bd ? ' · từ ' + ngay4(bd) : ''), bd: bd, tienGoc: soTienO(cell(r, col(h, rc.amount))), ngayNop: ngay4(cell(r, col(h, rc.payDate))),
+      loai: 'Retention', saleChot: sg, saleXem: C.saleTT(brand, h, r) };
+  };
+  // Tren may: cac khoa DA NOP cua 1 be tu danh sach da tai (dsKhach + dsTaiTuc), cung ten + co chung SDT
+  C.khoaNop = function (ds, dsTT, x) {
+    var kt = khoaTen(x && x.ten), ps = tapSdt(x || {}), out = [];
+    function cung(o) { if (khoaTen(o.ten) !== kt) return false; var q = tapSdt(o); for (var p in q) if (ps[p]) return true; return false; }
+    (ds || []).forEach(function (o) {
+      if (!o || o.tt || !cung(o) || !(soTienO(o.soTien) > 0)) return;
+      out.push({ kind: 'data', row: o.row, file: '1.26', ten: o.ten, sdt: o.sdtGoc || o.sdt, coSo: o.coSo, khoa: 'Khách mới' + (o.hinhThuc ? ' · ' + o.hinhThuc : ''), bd: '',
+        tienGoc: soTienO(o.soTien), ngayNop: ngay4(o.ngayTien), loai: 'New', saleChot: o.sale, saleXem: o.sale, exp: { ten: o.ten, sdt: o.sdt } });
+    });
+    (dsTT || []).forEach(function (o) {
+      if (!o || !cung(o) || !(soTienO(o.soTien) > 0)) return;
+      out.push({ kind: 'reten', row: o.row, file: '3.26', ten: o.ten, sdt: o.sdt, coSo: o.coSo, khoa: (o.khoa || '') + (o.bd ? ' · từ ' + ngay4(o.bd) : ''), bd: o.bd,
+        tienGoc: soTienO(o.soTien), ngayNop: ngay4(o.ngayTien), loai: 'Retention', saleChot: o.saleGoi || o.sale, saleXem: o.sale, exp: { ten: o.ten, sdt: o.sdt, bd: o.bd } });
+    });
+    out.sort(function (a, b) { return (C.dayNum(C.parseDate(b.ngayNop)) || 0) - (C.dayNum(C.parseDate(a.ngayNop)) || 0); });
+    return out;
+  };
+  // Khoa nhan dien 1 khoa goc (khong dung so dong vi HCNS hay xoa/chen dong)
+  C.hoanKey = function (z) {
+    var nn = C.parseDate(T(z.ngayNop)), p = String(C.normPhone(String(z.sdt || '').split(/[\n,;/]/)[0]) || '').replace(/\D/g, '').slice(-9);
+    return [T(z.file), noDau(z.ten), p, nn ? C.dayNum(nn) : T(z.ngayNop), soTienO(z.tienGoc), noDau(z.khoa)].join('|');
+  };
+  // Kiem 1 de nghi hoan. src: khoa goc (C.khoaGocTuDong / C.khoaNop); f: {soTien, lyDo, traBang, ghiChu}; ds: C.docHoan (moi phieu da co)
+  C.kiemHoan = function (brand, src, f, ds, user) {
+    var e = []; f = f || {};
+    if (!src) return ['Chọn khoá học đã nộp tiền.'];
+    if (!T(src.ten)) e.push('Dòng gốc chưa có tên học viên.');
+    if (!(src.tienGoc > 0)) e.push('Khoá này chưa có số tiền đã nộp, không lập phiếu hoàn được.');
+    if (user && !user.leader && !C.sameSale(user.saleName, src.saleXem) && !C.sameSale(user.saleName, src.saleChot)) e.push('Bé này không thuộc danh sách của bạn.');
+    var t = C.soTien(f.soTien);
+    if (!t || t <= 0) e.push('Điền số tiền hoàn.');
+    else if (src.tienGoc > 0 && t > src.tienGoc) e.push('Số tiền hoàn ' + C.tien(t) + 'đ lớn hơn số đã nộp ' + C.tien(src.tienGoc) + 'đ.');
+    if (!T(f.lyDo)) e.push('Ghi lý do hoàn.');
+    if (C.HOAN_TRA.indexOf(T(f.traBang).toUpperCase()) < 0) e.push('Chọn trả bằng CK hoặc TM.');
+    var k = C.hoanKey(src), da = 0;
+    (ds || []).forEach(function (z) {
+      if (z.brand !== brand || C.hoanKey(z) !== k) return;
+      if (hoanDang(z)) e.push('Khoá này đã có phiếu ' + z.so + ' (' + z.tt + '). Chờ chị Hoa xử lý, đừng lập trùng.');
+      if (!hoanBo(z)) da += +z.tien || 0;
+    });
+    if (t > 0 && da > 0 && da + t > src.tienGoc) e.push('Khoá này đã hoàn ' + C.tien(da) + 'đ, thêm ' + C.tien(t) + 'đ sẽ vượt số đã nộp ' + C.tien(src.tienGoc) + 'đ.');
+    return e.filter(function (x, i, a) { return a.indexOf(x) === i; });
+  };
+  // So phieu HP-IS2611-0001: dem rieng tung thuong hieu theo nam-thang, lay so lon nhat da co + 1
+  C.soHoan = function (brand, today, ds) {
+    var pre = 'HP-' + C.soPhieu(brand, today, 0).slice(0, -4), n = 0;
+    (ds || []).forEach(function (z) { var so = T(z.so); if (so.indexOf(pre) === 0) { var v = +so.slice(pre.length); if (v > n) n = v; } });
+    return pre + ('000' + (n + 1)).slice(-4);
+  };
+  // Lap dong moi (21 cot A-U). now: 'yyyy-MM-dd HH:mm'
+  C.planHoan = function (brand, src, f, user, ds, today, now) {
+    var e = C.kiemHoan(brand, src, f, ds, user); if (e.length) return { ok: false, errors: e };
+    var so = C.soHoan(brand, today, ds), t = C.soTien(f.soTien);
+    var vals = [so, brand, T(now), T(user.saleName) || T(user.ten), T(src.ten), String(src.sdt || '').trim(), T(src.coSo), src.file, T(src.khoa), src.tienGoc,
+      ngay4(src.ngayNop), src.loai, T(src.saleChot), t, T(f.lyDo).replace(/\r/g, '').slice(0, 500), T(f.traBang).toUpperCase(), C.HOAN_TT.CHO, '', '', '', T(f.ghiChu).slice(0, 300)];
+    return { ok: true, so: so, vals: vals, rec: C.docHoan([C.HOAN_HD, vals])[0] };
+  };
+  // Phieu hoan nguoi dung xem duoc: sale thay phieu minh lap hoac khoa minh chot; quan ly thay het. Moi nhat len dau.
+  C.dsHoanCua = function (ds, brand, user) {
+    return (ds || []).filter(function (z) { return z.brand === brand && (user.leader || C.sameSale(user.saleName, z.saleLap) || C.sameSale(user.saleName, z.saleChot)); })
+      .sort(function (a, b) { return a.tg < b.tg ? 1 : a.tg > b.tg ? -1 : b.row - a.row; });
+  };
+  // Nhan "Đã hoàn học phí" tren the be: chi tra khoa ten+SDT (khong tra so tien) de web danh dau
+  C.daHoanKeys = function (ds, brand) {
+    var o = {};
+    (ds || []).forEach(function (z) { if (z.brand !== brand || !C.laDaHoan(z)) return; var l = C.phones(z.sdt); (l.length ? l.map(function (p) { return p.sdt; }) : [z.sdt]).forEach(function (p) { o[C.hvKey(z.ten, p)] = 1; }); });
+    return Object.keys(o);
+  };
+  C.coDaHoan = function (x, keys) {
+    if (!x || !keys) return false; var m = keys.length != null ? keys.reduce(function (a, k) { a[k] = 1; return a; }, {}) : keys;
+    var l = x.sdts && x.sdts.length ? x.sdts.map(function (p) { return p.sdt; }) : [x.sdt];
+    return l.some(function (p) { return !!m[C.hvKey(x.ten, p)]; });
   };
   return C;
 })();
@@ -2902,7 +3044,7 @@ var DEMO_TK = /*DEMO_TK*/null || { IS: [{ ma: 'IS_DEMO', nganHang: 'VietinBank',
 var DEMO_TT = { lienHe: ['Liên hệ thành công', 'Chưa liên hệ được, phải thử lại', 'Chưa gọi'], chot: ['Đã thành công', 'Đang xem xét', 'Không thành công', 'Đang đợi CK'], trangThai: ['Đang học', 'Bảo lưu', 'Nghỉ luôn', 'Tái đăng kí'], hinhThuc: ['Tập Trung', 'Kèm Riêng'], lyDo: ['F – Lịch học không phù hợp', 'G – Học phí', 'Chưa xác định'], payMethod: ['Chuyển khoản', 'Tiền mặt'] };
 function demoInit() {
   ['IS', '4Y'].forEach(function (b) { var k = Core.SK[b], hd = Object.keys(k).filter(function (x) { return x !== 'contactVal'; }).map(function (x) { return k[x]; });
-    DB[b] = { hv: demoHV(b), data: Sample.data(b), reten: Sample.reten(b), misc: Sample.misc(b), kho: [], soP: 0, bp: [], soBP: 0, sk: [hd, demoSk(hd, k, 'Lê Minh An', '0912000111', b === 'IS' ? 'JR CUP 2026' : 'Giải U9 mùa đông', '500000')] }; });
+    DB[b] = { hv: demoHV(b), hoan: Sample.hoan ? Core.docHoan(Sample.hoan(b)) : [], data: Sample.data(b), reten: Sample.reten(b), misc: Sample.misc(b), kho: [], soP: 0, bp: [], soBP: 0, sk: [hd, demoSk(hd, k, 'Lê Minh An', '0912000111', b === 'IS' ? 'JR CUP 2026' : 'Giải U9 mùa đông', '500000')] }; });
 }
 function demoHV(b) { var hd = ['STT', 'TÊN HỌC SINH', 'MÃ HV', 'NGÀY SINH', 'LỚP', 'TRƯỜNG HỌC', 'SĐT LIÊN HỆ', 'KHÓA HỌC', 'NOTE', 'TÌNH TRẠNG KH', 'NGÀY BẮT ĐẦU', 'NGÀY KẾT THÚC', 'HẠN SAU TẾT 2026', 'SỐ BUỔI CÒN LẠI'], t = {};
   t[b === 'IS' ? 'ĐH VINH' : 'BĐ Trung Long'] = [hd, ['1', 'Phan Gia Bảo', b + '-00901', '12/03/2016', 'Cấp 1', 'TH Hưng Dũng', '0915777001', 'KH 3 THÁNG', '', 'Nghỉ luôn', '01/03/2026', '01/06/2026', '08/06/2026'], ['2', 'Trịnh Minh Khôi', b + '-00902', '05/09/2015', 'Cấp 1', 'TH Lê Mao', '0915777002', 'KH 6 THÁNG', '', 'Đang học', '01/09/2026', '01/03/2027', '10/03/2027'], ['3', 'Lê Bảo An', b + '-00903', '2017', 'Cấp 1', '', '0915777003', '', '', 'Đã học thử', '', '', '']];
@@ -2925,12 +3067,17 @@ function demoCall(p) {
         }
         if (p.act === 'me') return ok({ me: st.me, thu: true });
         if (u && u.leader && p.loc) u = { ten: u.ten, saleName: p.loc, leader: false };
-        if (p.act === 'thongKe') { var tk0 = Core.thongKe(b, d.data, d.reten, u, p.tu || today, p.den || today, today, { sk: d.sk, cs: d.cs || [], ten: d.tenCS || Core.tenGhiCS }); tk0.ton = Core.homNay(b, d.data, d.reten, u, today).dem; return ok(tk0); }
+        if (p.act === 'thongKe') { var tk0 = Core.thongKe(b, d.data, d.reten, u, p.tu || today, p.den || today, today, { sk: d.sk, cs: d.cs || [], ten: d.tenCS || Core.tenGhiCS, hoan: d.hoan }); tk0.ton = Core.homNay(b, d.data, d.reten, u, today).dem; return ok(tk0); }
         if (p.act === 'homNay') { var hn0 = Core.homNay(b, d.data, d.reten, u, today, d.hv), tn0 = Core.dayNum(Core.parseDate(today)); hn0.baoPhi = d.bp.filter(function (r) { return r.tt === 'Chờ chuyển'; }).map(function (r) { var tu = tn0 - Core.dayNum(Core.parseDate(r.today)), qua = tu >= Core.BAO_PHI_NHAC_NGAY; return { bp: r.so, kind: r.kind, row: r.row, x: r.x, f: r.f, hp: r.hp, phieu: r.phieu, ten: r.phieu.ten, sdt: r.src.sdt, coSo: r.src.coSo, sale: r.src.sale, soTien: r.phieu.soTien, khoa: r.phieu.khoa, ngayLap: r.today, tuoi: tu, qua: qua, lyDo: qua ? 'Gửi ' + tu + ' ngày, chưa chuyển: gọi nhắc phụ huynh' : (tu ? 'Gửi ' + tu + ' ngày trước' : 'Gửi hôm nay') }; }); hn0.dem.baoPhi = hn0.baoPhi.length; var tre0 = hn0.baoPhi.filter(function (x) { return x.qua; }).length; if (tre0) hn0.canhBao.push(tre0 + ' phiếu báo học phí đã gửi từ ' + Core.BAO_PHI_NHAC_NGAY + ' ngày trở lên mà phụ huynh chưa chuyển. Xem mục Chờ PH chuyển và gọi nhắc.'); return ok(hn0); }
         if (p.act === 'baoPhi') { var rw0 = p.kind === 'reten' ? d.reten : d.data, sr0 = Core.dkNguon(b, p.kind, rw0, Number(p.row)); if (p.kind === 'reten') sr0.loai = 'Retention'; var e0 = Core.kiemPhieuThu(b, p.dk); if (!p.dk.khoaHoc) e0.push('Chọn khoá học.'); if (!Core.parseDate(p.dk.ngayBatDau || '')) e0.push('Điền ngày bắt đầu học.'); if (!Core.soTien(p.hp)) e0.push('Điền học phí cần đóng.'); if (!sr0.ten) e0.push('Khách chưa có tên bé: điền tên bé, bấm Lưu, rồi mới tạo phiếu báo phí.'); if (e0.length) return ok({ ok: false, loi: e0 });
           var sl0 = u.saleName || sr0.sale, tk0 = Core.chonTaiKhoan(b, DEMO_TK, sl0, sr0.coSo); if (!tk0) return ok({ ok: false, loi: ['Chưa có tài khoản nhận tiền cho sale ' + sl0 + '. Nhắn chị Hoa cập nhật rồi tạo lại phiếu.'] });
           var so0 = Core.soBaoPhi(b, today, ++d.soBP), ph0 = Core.phieuBaoPhi(b, sr0, Core.soTien(p.hp), p.dk, so0, u, today, tk0); d.bp.forEach(function (r) { if (r.tt === 'Chờ chuyển' && r.kind === p.kind && r.row === Number(p.row)) r.tt = 'Thay bằng ' + so0; });
           d.bp.push({ so: so0, kind: p.kind, row: Number(p.row), x: p.x, f: p.dk, hp: Core.soTien(p.hp), phieu: ph0, src: sr0, today: p.ngayDemo || today, tt: 'Chờ chuyển' }); return ok({ ok: true, phieu: ph0, thongBao: 'DEMO: đã tạo phiếu báo phí trong bộ nhớ trình duyệt.' }); }
+        if (p.act === 'dsHoan') return ok({ ds: Core.dsHoanCua(d.hoan, b, u), daHoan: Core.daHoanKeys(d.hoan, b) });
+        if (p.act === 'hoanHP') { var rh = p.kind === 'reten' ? d.reten : d.data, hh = Core.header(rh[0]), ch0 = Core.BRANDS[b][p.kind === 'reten' ? 'reten' : 'data'], cc = function (n) { var v = n ? hh[Core.N(n)] : null; return v == null ? -1 : v; };
+          var dh = Core.dinhViDong(rh, hh, Number(p.row), p.exp, cc(ch0.name), cc(ch0.phone), p.kind === 'reten' ? cc(ch0.start) : -1); if (!dh.ok) return ok({ ok: false, loi: [dh.loi] });
+          var ph9 = Core.planHoan(b, Core.khoaGocTuDong(b, p.kind === 'reten' ? 'reten' : 'data', rh, dh.row), p.f, u, d.hoan, today, '2026-11-05 ' + new Date().toTimeString().slice(0, 5)); if (!ph9.ok) return ok({ ok: false, loi: ph9.errors });
+          ph9.rec.row = d.hoan.length + 2; d.hoan.push(ph9.rec); return ok({ ok: true, phieu: ph9.rec, thongBao: 'DEMO: đã lưu đề nghị ' + ph9.so + ' trong bộ nhớ trình duyệt.' }); }
         if (p.act === 'huyBaoPhi') { d.bp.forEach(function (r) { if (r.so === p.so) r.tt = 'Đã huỷ'; }); return ok({ ok: true }); }
         if (p.act === 'tuyChon') { var o = Core.options(b, d.misc, d.data); if (!u.leader) o.sale = [u.saleName]; o.tt = DEMO_TT; o.nguoiLap = [{ ten: 'Bùi Thị Lệ Quyên', pb: 'BR' }, { ten: 'Phan Thị Thanh Hiền', pb: 'BR' }, { ten: 'Trần Thị Minh Phương', pb: 'BĐ' }]; o.giai = Core.giaiGoiY(b, d.sk, o.coSo); o.giai.payMethod = o.payMethod; return ok(o); }
         if ((p.act === 'capNhatTaiTuc' || p.act === 'capNhat') && p.baoPhi && p.dk) d.bp.forEach(function (r) { if (r.so === p.baoPhi && r.tt === 'Chờ chuyển') r.tt = 'Đã thu'; });
@@ -2985,8 +3132,8 @@ function render() {
   h += '</header>';
   if (!st.thu && st.banSao) h += '<div class="banner"><b>ĐANG CHẠY THỬ</b>: dữ liệu lưu vào file bản sao, chưa vào file 1.26 thật.</div>';
   if (st.thu) h += '<div class="banner"><b>CHẾ ĐỘ THỬ</b>: lưu chỉ để xem trước, <b>không ghi vào Sheet thật</b>.' + (DEMO ? ' Dữ liệu là dữ liệu mẫu.' : '') + '</div>';
-  var body = st.tab === 'homnay' ? homView() : st.tab === 'khach' ? khachView() : st.tab === 'giai' ? giaiView() : st.tab === 'phieu' ? phieuView() : st.tab === 'muado' ? muaDoView() : st.tab === 'data' ? dataView() : st.tab === 'hieuqua' ? hqView() : st.tab === 'baoluu' ? blView() : themView();
-  h += '<main>' + body + '</main><nav>' + [['homnay', 'Hôm nay'], ['khach', 'Học viên'], ['data', '+ Data mới'], ['them', '+ Học thử'], ['giai', '+ Giải'], ['phieu', 'Phiếu thu']].map(function (t) { return '<button class="' + (st.tab === t[0] || st.tab === 'muado' && t[0] === 'phieu' ? 'on' : '') + '" onclick="setTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</nav>';
+  var body = st.tab === 'homnay' ? homView() : st.tab === 'khach' ? khachView() : st.tab === 'giai' ? giaiView() : st.tab === 'phieu' ? phieuView() : st.tab === 'muado' ? muaDoView() : st.tab === 'hoan' ? hoanView() : st.tab === 'data' ? dataView() : st.tab === 'hieuqua' ? hqView() : st.tab === 'baoluu' ? blView() : themView();
+  h += '<main>' + body + '</main><nav>' + [['homnay', 'Hôm nay'], ['khach', 'Học viên'], ['data', '+ Data mới'], ['them', '+ Học thử'], ['giai', '+ Giải'], ['phieu', 'Phiếu thu']].map(function (t) { return '<button class="' + (st.tab === t[0] || (st.tab === 'muado' || st.tab === 'hoan') && t[0] === 'phieu' ? 'on' : '') + '" onclick="setTab(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</nav>';
   $('#app').innerHTML = h;
 }
 function loginView() {
@@ -2999,8 +3146,8 @@ function doLogin() {
 }
 function pickBrand(me) { st.brand = FIX || Object.keys(me.brands)[0]; }
 function logout() { try { Object.keys(localStorage).forEach(function (k) { if (/^appsale_nho_/.test(k)) localStorage.removeItem(k); }); } catch (e) {} st.ds = null; st.dsTT = null; localStorage.removeItem('appsale_token'); st.me = null; render(); }
-function setBrand(b) { st.brand = b; st.hn = null; st.opt = {}; st.kq = []; st.ds = null; st.dsTT = null; st.tk = null; boot(); if (st.tab === 'hieuqua') taiTk(); }
-function setTab(t) { st.tab = t; render(); if (t === 'phieu') taiKho(); if (t === 'giai') giaiInit(); if (t === 'baoluu') taiBl(); window.scrollTo(0, 0); }
+function setBrand(b) { st.brand = b; st.hn = null; st.opt = {}; st.kq = []; st.ds = null; st.dsTT = null; st.tk = null; st.hoanDs = null; st.hoanDa = null; st.hBe = null; boot(); if (st.tab === 'hieuqua') taiTk(); }
+function setTab(t) { st.tab = t; render(); if (t === 'phieu') taiKho(); if (t === 'giai') giaiInit(); if (t === 'baoluu') taiBl(); if (t === 'hoan') taiHoan(); window.scrollTo(0, 0); }
 function refresh() { // cap nhat nen: giu man hinh cu, chi tai lai danh sach Hom nay (tuy chon da co thi khong tai lai)
   if (st.tab === 'hieuqua') { st.tk = null; render(); taiTk(); return; }
   if (!st.opt || !st.hn || DEMO) { st.hn = null; boot(); return; }
@@ -3022,6 +3169,7 @@ function taiDs() { // tai ca danh sach khach (1 lan, nen) de o tim kiem ra ngay
   var k = st.brand + '|' + (st.loc || ''), lan = ++dsHen;
   call({ act: 'dsKhach' }).then(function (r) { if (lan !== dsHen) return; st.ds = r; st.dsKey = k; if (st.q && $('#kq')) onq(st.q); else if ($('#kq')) $('#kq').innerHTML = kqList(); else if (st.tab === 'homnay' && $('#hnBody')) $('#hnBody').innerHTML = hnBody(); }).catch(function () {});
   call({ act: 'dsTaiTuc' }).then(function (r) { if (lan !== dsHen) return; st.dsTT = r; if (st.q && $('#kq')) onq(st.q); }).catch(function () {}); // 06/11/2026: hoc sinh 3.26 (tai ki truoc han, bo sung hoc phi)
+  taiHoan(); // 12/11/2026: nhan "Đã hoàn học phí" tren the be
 }
 function timMay(v) { return Core.locDs(st.ds, v, 30).concat(st.dsTT ? Core.locDs(st.dsTT, v, 20) : []); }
 function ttTim(n) { return (st.hn && st.hn.taiTuc || []).concat(st.hn && st.hn.baoLuu || [], st.dsTT || [], st.kq || []).filter(function (k) { return k.tt && k.row === n; })[0]; }
@@ -3055,7 +3203,7 @@ function card(x, kind) {
   var sub = [x.sdt, x.coSo, x.sale ? 'Sale: ' + x.sale : 'Chưa có sale'].filter(Boolean).join(' · ');
   var extra = kind === 'tt' ? '<div class="sub">' + esc(x.khoa) + ' · ' + (x.han ? 'hạn ' + esc(x.han) : 'chưa có hạn') + '</div>' + ([x.lienHe, x.chot].filter(Boolean).length || x.ngayGoi ? '<div class="sub">' + esc([x.ngayGoi ? 'Gọi gần nhất ' + x.ngayGoi : 'Chưa gọi', x.lienHe, x.chot].filter(Boolean).join(' · ')) + '</div>' : '') + (x.note ? '<div class="note">' + esc(String(x.note).split('\n').slice(-2).join('\n')) + '</div>' : '') : (x.ngayHocThu && x.ngayHocThu.length ? '<div class="sub">Học thử: ' + esc(x.ngayHocThu.join(', ')) + (x.hocThu ? ' · ' + esc(x.hocThu) : '') + '</div>' : '');
   var b = '<div class="btns">' + contact(x) + (kind === 'k' ? '<button onclick="giaiTu(' + x.row + ')">Đăng ký giải</button>' : '') + (kind !== 'tt' ? '<button class="pri" onclick="openUpd(' + x.row + ',\'hn\')">Cập nhật</button>' : '<button class="pri" onclick="openTT(' + x.row + ')">Cập nhật</button>') + '</div>';
-  return '<div class="card"><div class="t"><div class="n">' + esc(x.ten || '(chưa có tên bé)') + '</div></div>' + tag + qlHtml(x) + '<div class="sub">' + esc(sub) + '</div>' + extra + (x.note && kind !== 'tt' ? '<div class="note">' + esc(x.note) + '</div>' : '') + b + '</div>';
+  return '<div class="card"><div class="t"><div class="n">' + esc(x.ten || '(chưa có tên bé)') + '</div></div>' + tag + (st.hoanDa && Core.coDaHoan(x, st.hoanDa) ? ' <span class="tag red">Đã hoàn học phí</span>' : '') + qlHtml(x) + '<div class="sub">' + esc(sub) + '</div>' + extra + (x.note && kind !== 'tt' ? '<div class="note">' + esc(x.note) + '</div>' : '') + b + '</div>';
 }
 // 12/11/2026 chi Hoa (Minh Phuong, Co Nga): be BAO LUU o Hom nay, nut Ghi cham soc noi them NOTE (dd/mm: noi dung) + ghi NGAY GOI CHAM SOC vao 3.26
 function cardBL(x) {
@@ -3124,14 +3272,15 @@ function taiTk() {
   call({ act: 'thongKe', tu: r[0], den: r[1] }).then(function (k) { k.key = key; st.tk = k; if (st.tab === 'hieuqua') render(); })
     .catch(function (e) { st.tk = { loi: e.message }; if (st.tab === 'hieuqua') render(); });
 }
-function trieu(n) { n = +n || 0; return n >= 1e6 ? (Math.round(n / 1e5) / 10).toString().replace('.', ',') + 'tr' : n ? Core.tien(n) : '0'; }
+function trieu(n) { n = +n || 0; var a = Math.abs(n), s = a >= 1e6 ? (Math.round(a / 1e5) / 10).toString().replace('.', ',') + 'tr' : a ? Core.tien(a) : '0'; return (n < 0 ? '-' : '') + s; }
+function tkHoan(x) { return x.hoan ? x.hoan + ' · -' + trieu(x.tienHoan) : '0'; } // 12/11/2026: phieu hoan hoc phi Da hoan (luot · tien)
 function tyLe(a, b) { return b ? Math.round(a * 100 / b) + '%' : '-'; }
 function tkDong(ten, x, cls) {
-  var c = [C0(Core.tkViec(x)), x.data, x.cham126, x.denHT + '/' + x.hocThu, x.cham326, x.chamHV || 0, x.giaiGoi || 0, x.chot, tyLe(x.chotHT, x.denHT), x.taiKi, x.giai || 0, trieu(x.tienChot + x.tienTaiKi), trieu(x.tienGiai || 0)];
+  var c = [C0(Core.tkViec(x)), x.data, x.cham126, x.denHT + '/' + x.hocThu, x.cham326, x.chamHV || 0, x.giaiGoi || 0, x.chot, tyLe(x.chotHT, x.denHT), x.taiKi, x.giai || 0, trieu(x.tienChot + x.tienTaiKi), tkHoan(x), trieu(x.tienGiai || 0)];
   return '<tr' + (cls ? ' class="' + cls + '"' : '') + '><td>' + esc(ten) + '</td><td>' + c.join('</td><td>') + '</td></tr>';
 }
 function C0(n) { return '<b>' + n + '</b>'; }
-var TK_HEAD = '<thead><tr><th>Sale</th><th>Tổng lượt việc</th><th>Data mới</th><th>Chăm KH mới</th><th>Đến/hẹn HT</th><th>Gọi tái tục</th><th>Chăm HV đang học</th><th>Gọi mời giải</th><th>Chốt mới</th><th>Tỉ lệ chốt</th><th>Tái kí</th><th>ĐK giải</th><th>Tiền học phí</th><th>Lệ phí giải</th></tr></thead>';
+var TK_HEAD = '<thead><tr><th>Sale</th><th>Tổng lượt việc</th><th>Data mới</th><th>Chăm KH mới</th><th>Đến/hẹn HT</th><th>Gọi tái tục</th><th>Chăm HV đang học</th><th>Gọi mời giải</th><th>Chốt mới</th><th>Tỉ lệ chốt</th><th>Tái kí</th><th>ĐK giải</th><th>Tiền học phí</th><th>Hoàn HP</th><th>Lệ phí giải</th></tr></thead>';
 function tkO(n, t) { return '<div><b>' + n + '</b><span>' + t + '</span></div>'; }
 function hqView() {
   var s = locBar() + '<h3 style="margin:4px 0 8px">Hiệu quả làm việc</h3><div class="locs">' + [['homnay', 'Hôm nay'], ['homqua', 'Hôm qua'], ['7ngay', '7 ngày'], ['thang', 'Tháng này']].map(function (t) { return '<button class="' + (st.tkK === t[0] ? 'on' : '') + '" onclick="tkChon(\'' + t[0] + '\')">' + t[1] + '</button>'; }).join('') + '</div>';
@@ -3148,8 +3297,9 @@ function hqView() {
     tkO(g.hvGoiDuoc, 'Đã gọi được, đã xử lý') + tkO(g.hvKhongNghe, 'Không nghe máy, hẹn gọi lại') + tkO(g.hvHetBuoi, 'Sắp hết buổi') +
     tkO(g.hvVang, 'Vắng lâu') + tkO(g.hvHetKhoa, 'Sắp hết khoá') + tkO(g.hvKhongDeu, 'Đi học không đều') + '</div>';
   s += '<div class="tkh"><b>Kết quả</b></div><div class="tkg">' +
-    tkO(g.chot, 'Chốt khách mới (thu ' + trieu(g.tienChot) + ')') + tkO(tyLe(g.chotHT, g.denHT), 'Bé đến học thử đã chốt (' + g.chotHT + '/' + g.denHT + ')') +
-    tkO(g.taiKi, 'Tái kí (' + trieu(g.tienTaiKi) + ')') + tkO(trieu(tien), 'Tổng tiền học phí') + tkO(g.giai, 'Bé đăng kí giải (lệ phí ' + trieu(g.tienGiai) + ')') + '</div>';
+    tkO(g.chot, 'Chốt khách mới (thu ' + trieu(g.hoan ? g.tienChotGoc : g.tienChot) + ')') + tkO(tyLe(g.chotHT, g.denHT), 'Bé đến học thử đã chốt (' + g.chotHT + '/' + g.denHT + ')') +
+    tkO(g.taiKi, 'Tái kí (' + trieu(g.hoan ? g.tienTaiKiGoc : g.tienTaiKi) + ')') + tkO(trieu(tien), 'Tổng tiền học phí' + (g.hoan ? ' (đã trừ hoàn)' : '')) + tkO(g.giai, 'Bé đăng kí giải (lệ phí ' + trieu(g.tienGiai) + ')') + (g.hoan ? tkO(g.hoan + ' lượt', 'Hoàn học phí (-' + trieu(g.tienHoan) + ')') : '') + '</div>' +
+    (g.hoan ? '<div class="sub" style="margin:-4px 2px 8px">Tiền thu khi chốt, tái kí là số gốc. Tổng tiền học phí và bảng theo sale đã trừ ' + Core.tien(g.tienHoan) + 'đ hoàn học phí (phiếu "Đã hoàn", trừ vào sale chốt khoá gốc, theo ngày hoàn tiền).</div>' : '');
   if (k.ton) s += '<div class="tkh"><b>Việc còn tồn lúc này</b></div><div class="tkg">' + tkO(k.ton.canGoi || 0, 'Cần gọi') + tkO(k.ton.hocThuChuaChot || 0, 'Học thử xong, chưa chốt') + tkO(k.ton.taiTuc || 0, 'Tái tục sắp hạn') + '</div>';
   if (k.sale.length > 1 || !st.loc) {
     s += '<div class="tkh"><b>Theo sale</b> · xếp theo tổng lượt việc</div><div class="tkw"><table class="tk">' + TK_HEAD + '<tbody>' + tkDong('TỔNG', g, 'tg') + k.sale.map(function (x) { return tkDong(x.ten, x.tong); }).join('') + '</tbody></table></div>';
@@ -3160,7 +3310,7 @@ function hqView() {
     s += '<div class="tkh"><b>Theo ngày</b></div><div class="tkw"><table class="tk">' + TK_HEAD.replace('<th>Sale</th>', '<th>Ngày</th>') + '<tbody>' + ds.map(function (n) { return tkDong(n, nd[n]); }).join('') + '</tbody></table></div>';
   }
   if (!k.sale.length) s += '<div class="empty">Chưa có việc nào được ghi nhận trong khoảng này.</div>';
-  s += '<div class="sub">Cách đếm: "Chăm KH mới", "Gọi tái tục", "Gọi mời giải" là khách có ngày gọi, ngày chăm sóc hoặc ghi chú "dd/mm:" đúng ngày đó trong file 1.26, 3.26 và tab DATA SỰ KIỆN (1 khách tính 1 lần/ngày). "Chăm HV đang học" lấy từ nút Ghi ở mục Việc cần xử lý của bảng điều hành (file 2.26 SALE CHĂM SÓC, có từ 05/11/2026), 1 bé tính 1 lần/ngày. Tổng lượt việc = data mới + chăm KH mới + hẹn học thử + gọi tái tục + chăm HV + gọi mời giải. Chốt, tái kí, đăng kí giải theo ngày nhận tiền. Tiền học phí không gồm lệ phí giải. Từ 07/11/2026 app chụp số mỗi ngày, nên số những ngày trước 07/11 có thể thiếu do ngày gọi trong Sheet bị ghi đè. Chưa có chỉ tiêu: dùng 1 tháng số này làm mốc.</div>';
+  s += '<div class="sub">Cách đếm: "Chăm KH mới", "Gọi tái tục", "Gọi mời giải" là khách có ngày gọi, ngày chăm sóc hoặc ghi chú "dd/mm:" đúng ngày đó trong file 1.26, 3.26 và tab DATA SỰ KIỆN (1 khách tính 1 lần/ngày). "Chăm HV đang học" lấy từ nút Ghi ở mục Việc cần xử lý của bảng điều hành (file 2.26 SALE CHĂM SÓC, có từ 05/11/2026), 1 bé tính 1 lần/ngày. Tổng lượt việc = data mới + chăm KH mới + hẹn học thử + gọi tái tục + chăm HV + gọi mời giải. Chốt, tái kí, đăng kí giải theo ngày nhận tiền. Tiền học phí không gồm lệ phí giải, đã trừ phiếu hoàn học phí "Đã hoàn" (trừ sale chốt khoá gốc vào ngày hoàn tiền; khoá mới trừ tiền chốt, tái kí trừ tiền tái kí). Từ 07/11/2026 app chụp số mỗi ngày, nên số những ngày trước 07/11 có thể thiếu do ngày gọi trong Sheet bị ghi đè. Chưa có chỉ tiêu: dùng 1 tháng số này làm mốc.</div>';
   s += '<div class="btns" style="margin-top:10px"><button onclick="setTab(\'homnay\')">← Về Hôm nay</button></div>';
   return s;
 }
@@ -3911,7 +4061,7 @@ function moPhieu(p, canh, moi) {
 function C_ZALO(p) { var s = String(p.sdt || '').split(' - ')[0].replace(/[^\d]/g, ''); return s ? 'https://zalo.me/' + s : ''; }
 // ---------- KHO PHIEU THU + SUA PHIEU (06/11/2026 team sale) ----------
 function phieuView() {
-  return '<div class="btns" style="margin-top:0"><button class="pri" onclick="setTab(\'muado\')">+ Phiếu mua đồ (không kèm học phí)</button></div>' +
+  return '<div class="btns" style="margin-top:0"><button class="pri" onclick="setTab(\'muado\')">+ Phiếu mua đồ (không kèm học phí)</button><button onclick="setTab(\'hoan\')">↩ Phiếu hoàn học phí</button></div>' +
     '<div class="sub" style="margin:4px 2px 10px">Khách chỉ mua áo dài tay, đồng phục, bóng, giày, tất, túi rút... mà không đăng kí học thì lập phiếu ở đây.</div>' +
     '<h3 style="margin-top:0">Kho phiếu thu</h3>' + locBar() +
     '<input id="pq" value="' + esc(st.pq || '') + '" oninput="onpq(this.value)" placeholder="Tìm theo tên bé, SĐT hoặc số phiếu" autocomplete="off">' +
@@ -4032,6 +4182,94 @@ function saveMuaDo() {
     ['m_ten', 'm_sdt', 'm_gc', 'm_sz', 'm_kt2', 'm_kt3'].concat((Core.DO[st.brand] || []).map(function (d) { return 'm_do_' + d.k; })).forEach(function (i) { if ($('#' + i)) $('#' + i).value = ''; }); tongDo('m');
     if (r.phieu) { luuPhieu(r.phieu); setTimeout(function () { moPhieu(r.phieu, r.canhBao, false); }, DEMO ? 300 : 700); }
   }).catch(function (e) { $('#me').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; });
+}
+
+// ---------- PHIEU HOAN HOC PHI (12/11/2026 chi Hoa chot luong, BAN NHAP) ----------
+// Sale lap de nghi; chi Hoa duyet o bang dieu hanh (muc Tai chinh); Linh chuyen tien roi bam "Đã hoàn". Chi khi Da hoan moi tru doanh so sale chot khoa goc.
+function taiHoan() {
+  if (!st.me) return;
+  var k = st.brand + '|' + (st.loc || '');
+  call({ act: 'dsHoan' }).then(function (r) { st.hoanDs = r.ds || []; st.hoanDa = (r.daHoan || []).reduce(function (a, x) { a[x] = 1; return a; }, {}); st.hoanKey = k; st.hoanLoi = '';
+    if ($('#h_ds')) $('#h_ds').innerHTML = hoanDsHtml(); if ($('#h_n')) $('#h_n').textContent = st.hoanDs.length; if ($('#kq') && st.q) onq(st.q); })
+    .catch(function (e) { st.hoanLoi = e.message; if ($('#h_ds')) $('#h_ds').innerHTML = hoanDsHtml(); });
+}
+function hoanView() {
+  var lead = st.me.brands[st.brand].leader;
+  return '<div class="btns" style="margin-top:0"><button onclick="setTab(\'phieu\')">‹ Kho phiếu thu</button></div><h3 style="margin-top:6px">Phiếu hoàn học phí</h3>' +
+    '<div class="hoanNhac">Học phí không hoàn trừ trường hợp đặc biệt. Phiếu chờ chị Hoa duyệt.</div>' +
+    '<div class="sub">Lập đề nghị ở đây. Chị Hoa duyệt, kế toán chuyển tiền rồi bấm "Đã hoàn". Chỉ khi đã hoàn, doanh số của sale chốt khoá đó mới bị trừ.</div>' +
+    '<label>Tìm bé *</label><input id="h_q" placeholder="tên bé hoặc SĐT" autocomplete="off" oninput="onHq(this.value)"><div id="h_goi"></div>' +
+    '<div id="h_be">' + hoanBeHtml() + '</div><div id="h_kq"></div>' +
+    '<h3>' + (lead ? 'Tất cả phiếu hoàn' : 'Phiếu hoàn của tôi') + '<em id="h_n">' + (st.hoanDs ? st.hoanDs.length : '...') + '</em></h3>' + '<div id="h_ds">' + hoanDsHtml() + '</div>';
+}
+function onHq(v) {
+  var b = $('#h_goi'); if (!b) return; v = v.trim();
+  if (v.length < 2) { b.innerHTML = ''; return; }
+  if (!st.ds && !st.dsTT) { b.innerHTML = '<div class="sub">Danh sách học viên đang tải, thử lại sau vài giây.</div>'; return; }
+  var seen = {}, l = [];
+  Core.locDs(st.ds || [], v, 20).concat(Core.locDs(st.dsTT || [], v, 20)).forEach(function (x) { var k = Core.hvKey(x.ten, x.sdt); if (!x.ten || seen[k]) return; seen[k] = 1; l.push(x); });
+  st.hGoi = l.slice(0, 8);
+  b.innerHTML = st.hGoi.length ? '<div class="goiy">' + st.hGoi.map(function (x, i) { var n = Core.khoaNop(st.ds, st.dsTT, x).length; return '<div onclick="chonBeHoan(' + i + ')"><b>' + esc(x.ten) + '</b> <span class="sub">' + esc([x.sdt, x.coSo].filter(Boolean).join(' · ')) + ' · ' + (n ? n + ' khoá đã nộp' : 'chưa có khoá nộp tiền') + '</span></div>'; }).join('') + '</div>' : '<div class="sub">Không thấy bé trong danh sách của bạn.</div>';
+}
+function chonBeHoan(i) {
+  var x = st.hGoi[i]; if (!x) return;
+  st.hBe = x; st.hKhoa = Core.khoaNop(st.ds, st.dsTT, x); st.hChon = st.hKhoa.length === 1 ? 0 : -1;
+  $('#h_goi').innerHTML = ''; $('#h_q').value = ''; $('#h_kq').innerHTML = ''; $('#h_be').innerHTML = hoanBeHtml();
+}
+function khoaNopHtml(k, i) {
+  return '<label class="kn' + (st.hChon === i ? ' on' : '') + '" onclick="chonKhoaHoan(' + i + ')"><input type="radio" name="hk"' + (st.hChon === i ? ' checked' : '') + '><b>' + esc(k.file) + ' · ' + esc(k.khoa) + '</b>' +
+    '<div class="sub">Nộp ' + esc(k.ngayNop || '(chưa ghi ngày)') + ' · <b>' + Core.tien(k.tienGoc) + 'đ</b> · ' + (k.loai === 'New' ? 'Khách mới' : 'Tái kí') + '</div><div class="sub">Sale chốt: ' + esc(k.saleChot || '(chưa ghi)') + '</div></label>';
+}
+function hoanBeHtml() {
+  var x = st.hBe; if (!x) return '';
+  var l = st.hKhoa || [], k = l[st.hChon];
+  var s = '<div class="card"><div class="t"><div class="n">' + esc(x.ten) + '</div><span class="sub">' + esc(x.sdt || '') + '</span></div><div class="sub">' + esc(x.coSo || '') + '</div>' +
+    (l.length ? '<label style="margin-top:8px">Chọn khoá đã nộp *</label><div id="h_kl">' + l.map(khoaNopHtml).join('') + '</div>' : '<div class="empty">Bé chưa có khoá nào ghi số tiền trong 1.26, 3.26. Không lập phiếu hoàn được.</div>') + '</div>';
+  if (!l.length) return s;
+  return s + '<div class="row2"><div><label>Số tiền hoàn *</label><input id="h_st" class="tien" inputmode="numeric" placeholder="vd 500.000"></div><div><label>Trả bằng *</label><select id="h_tra"><option value="">- chọn -</option><option value="CK">Chuyển khoản</option><option value="TM">Tiền mặt</option></select></div></div>' +
+    '<div class="sub" id="h_max">' + hoanMax(k) + '</div>' +
+    '<label>Lý do hoàn *</label><textarea id="h_ly" rows="2" placeholder="vd bé chuyển nhà vào Nam, chị Hoa đã đồng ý miệng"></textarea>' +
+    '<label>Ghi chú cho kế toán</label><input id="h_gc" placeholder="không ghi số tài khoản ở đây">' +
+    '<div id="h_e"></div><div class="btns"><button onclick="huyHoan()">Huỷ</button><button class="pri" onclick="saveHoan()">Gửi đề nghị hoàn</button></div>';
+}
+function chonKhoaHoan(i) {
+  st.hChon = i; var k = (st.hKhoa || [])[i];
+  [].forEach.call(document.querySelectorAll('#h_kl .kn'), function (e, j) { e.className = 'kn' + (j === i ? ' on' : ''); e.querySelector('input').checked = j === i; });
+  if ($('#h_max')) $('#h_max').textContent = hoanMax(k);
+}
+function hoanMax(k) { // tru phan da hoan / dang cho cua chinh khoa nay (phieu bi tu choi khong tinh)
+  if (!k) return 'Chọn khoá trước.';
+  var key = Core.hoanKey(k), da = (st.hoanDs || []).reduce(function (a, z) { return a + (z.brand === st.brand && Core.hoanKey(z) === key && Core.N(z.tt) !== Core.N(Core.HOAN_TT.TU_CHOI) ? +z.tien || 0 : 0); }, 0);
+  return da ? 'Đã nộp ' + Core.tien(k.tienGoc) + 'đ, đã có phiếu hoàn ' + Core.tien(da) + 'đ. Còn hoàn tối đa ' + Core.tien(Math.max(0, k.tienGoc - da)) + 'đ.' : 'Tối đa ' + Core.tien(k.tienGoc) + 'đ (số đã nộp khoá này).';
+}
+function huyHoan() { st.hBe = null; st.hKhoa = null; if ($('#h_be')) $('#h_be').innerHTML = ''; }
+function saveHoan() {
+  var k = (st.hKhoa || [])[st.hChon], g = function (i) { var e = $('#' + i); return e ? e.value.trim() : ''; };
+  var f = { soTien: g('h_st'), lyDo: g('h_ly'), traBang: g('h_tra'), ghiChu: g('h_gc') };
+  var e = k ? Core.kiemHoan(st.brand, k, f, st.hoanDs || [], null) : ['Chọn khoá học đã nộp tiền.'];
+  if (e.length) { $('#h_e').innerHTML = e.map(function (x) { return '<div class="err">' + esc(x) + '</div>'; }).join(''); return; }
+  $('#h_e').innerHTML = '<div class="spin">Đang gửi...</div>';
+  call({ act: 'hoanHP', kind: k.kind, row: k.row, exp: k.exp, f: f }).then(function (r) {
+    if (!r.ok) { $('#h_e').innerHTML = r.loi.map(function (x) { return '<div class="err">' + esc(x) + '</div>'; }).join(''); return; }
+    if (!r.thu || DEMO) { st.hoanDs = [r.phieu].concat(st.hoanDs || []); if ($('#h_ds')) $('#h_ds').innerHTML = hoanDsHtml(); if ($('#h_n')) $('#h_n').textContent = st.hoanDs.length; }
+    huyHoan(); $('#h_kq').innerHTML = '<div class="ok">' + esc(r.thongBao || 'Đã gửi đề nghị hoàn.') + '</div>' + hoanCard(r.phieu); window.scrollTo(0, 0);
+  }).catch(function (x) { $('#h_e').innerHTML = '<div class="err">' + esc(x.message) + '</div>'; });
+}
+function hoanTag(tt) { var t = Core.N(tt); return t === Core.N(Core.HOAN_TT.DA_HOAN) ? 'grn' : t === Core.N(Core.HOAN_TT.TU_CHOI) ? 'red' : t === Core.N(Core.HOAN_TT.CHO) ? 'org' : ''; }
+function hoanCard(z) {
+  if (!z) return '';
+  return '<div class="card"><div class="t"><span class="n">' + esc(z.ten) + '</span><span class="sub">' + esc(z.so) + '</span></div><span class="tag ' + hoanTag(z.tt) + '">' + esc(z.tt || '') + '</span>' +
+    '<div class="sub">' + esc(z.file + ' · ' + z.khoa) + ' · nộp ' + esc(z.ngayNop) + ' · ' + Core.tien(z.tienGoc) + 'đ</div>' +
+    '<div class="sub">Hoàn <b>' + Core.tien(z.tien) + 'đ</b> · ' + esc(z.traBang) + ' · sale chốt: ' + esc(z.saleChot || '?') + '</div>' +
+    '<div class="sub">Lập ' + esc(Core.fmtDate(Core.parseDate(String(z.tg).replace(/^(\d{4})-(\d{2})-(\d{2}).*$/, '$3/$2/$1'))) + String(z.tg).slice(10)) + ' · ' + esc(z.saleLap) + '</div>' +
+    (z.ngayHoan ? '<div class="sub">Đã hoàn ngày ' + esc(z.ngayHoan) + (z.nguoiXN ? ' · ' + esc(z.nguoiXN) : '') + '</div>' : '') + (z.duyet ? '<div class="sub">Duyệt: ' + esc(z.duyet) + '</div>' : '') +
+    '<div class="note">Lý do: ' + esc(z.lyDo) + '</div></div>';
+}
+function hoanDsHtml() {
+  if (st.hoanLoi) return '<div class="err">Chưa tải được phiếu hoàn: ' + esc(st.hoanLoi) + '</div>';
+  if (!st.hoanDs) return '<div class="spin">Đang tải...</div>';
+  if (!st.hoanDs.length) return '<div class="empty">Chưa có phiếu hoàn nào.</div>';
+  return st.hoanDs.map(hoanCard).join('');
 }
 
 // ---------- DANG KY GIAI / SU KIEN (ghi tab DATA SU KIEN file 1.26 + lap phieu thu) ----------
