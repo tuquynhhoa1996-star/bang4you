@@ -1,0 +1,103 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex"><title>Tiến độ việc văn phòng </title>
+<style>
+:root{--bg:#f4f5f3;--card:#fcfcfb;--ink:#0b0b0b;--ink2:#52514e;--line:#e2e1dc;
+--xong:#1baf7a;--lam:#2a78d6;--chua:#a8a7a0;--duyet:#eda100;--qh:#d03b3b}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,Segoe UI,Roboto,sans-serif}
+header{background:#14323f;color:#fff;padding:12px 16px;display:flex;justify-content:space-between;gap:8px;align-items:center;flex-wrap:wrap}
+header h1{font-size:16px;margin:0}header small{opacity:.8}
+.badge{background:#eda100;color:#111;border-radius:10px;padding:1px 8px;font-size:11px;font-weight:600}
+main{max-width:1200px;margin:0 auto;padding:12px}
+.kpi{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.k{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.k b{display:block;font-size:26px;line-height:1.1}.k span{color:var(--ink2);font-size:12px}
+.k i{display:inline-block;width:8px;height:8px;border-radius:2px;margin-right:5px}
+.bar{height:8px;background:#e8e7e2;border-radius:4px;margin-top:8px;overflow:hidden}.bar div{height:100%;background:var(--xong)}
+.card{min-width:0;overflow:hidden;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:12px}
+.card h2{font-size:14px;margin:0 0 8px}
+.bx{display:flex;gap:6px;margin-bottom:8px}.bx button{border:1px solid var(--line);background:#fff;border-radius:16px;padding:4px 12px;font-size:12px;cursor:pointer}
+.bx button.on{background:#14323f;color:#fff;border-color:#14323f}
+.row{display:grid;grid-template-columns:96px minmax(0,1fr) auto;gap:8px;align-items:center;margin:5px 0;font-size:12px}
+.row .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.stk{display:flex;height:16px;gap:2px}.stk div{height:100%;min-width:0}
+.stk div:first-child{border-radius:4px 0 0 4px}.stk div:last-child{border-radius:0 4px 4px 0}
+.row .c{white-space:nowrap;font-size:11px;color:var(--ink2);text-align:right;font-variant-numeric:tabular-nums}
+.lg{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:12px;color:var(--ink2);margin-bottom:6px}
+.lg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11px;color:var(--ink2);text-transform:uppercase}
+.late{color:var(--qh);font-weight:600;white-space:nowrap}
+.cols{display:block}.row>*{min-width:0}
+.cards{display:none}
+@media(max-width:640px){table{display:none}.cards{display:block}
+.ct{border-top:1px solid var(--line);padding:8px 0}.ct b{display:block}.ct span{color:var(--ink2);font-size:12px}}
+@media(min-width:900px){.kpi{grid-template-columns:repeat(4,minmax(0,1fr))}.cols{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}.cols .card{margin-top:12px}.row{grid-template-columns:150px minmax(0,1fr) auto}}
+.tip{position:fixed;background:#14323f;color:#fff;padding:5px 8px;border-radius:6px;font-size:12px;pointer-events:none;display:none;z-index:9}
+footer{color:var(--ink2);font-size:12px;padding:8px 4px 24px}
+#lgn{position:fixed;inset:0;background:var(--bg);z-index:9;display:flex;align-items:center;justify-content:center;padding:16px}
+#lgn form{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;width:100%;max-width:340px}
+#lgn h2{margin:0 0 4px;font-size:17px}#lgn p{margin:0 0 12px;color:var(--ink2);font-size:13px}
+#lgn input{width:100%;padding:11px;border:1px solid var(--line);border-radius:8px;font-size:16px;margin-bottom:8px}
+#lgn button{width:100%;padding:11px;border:0;border-radius:8px;background:#14323f;color:#fff;font-size:15px;cursor:pointer}
+#lgn .er{color:var(--qh);font-size:13px;min-height:18px;margin:4px 0}
+</style></head><body>
+<div id="lgn" style="display:none"><form id="lf"><h2>Tiến độ việc văn phòng</h2><p>Đăng nhập bằng tên đăng nhập và mã PIN nhân sự của bạn.</p>
+<input id="lu" placeholder="Tên đăng nhập" autocomplete="username" autocapitalize="none"><input id="lp" placeholder="Mã PIN 6 số" type="password" inputmode="numeric" autocomplete="current-password">
+<div class="er" id="le"></div><button>Đăng nhập</button></form></div>
+<header><div><h1>Tiến độ việc văn phòng</h1><small id="sub"></small></div><small>Dành cho nhân sự văn phòng (đăng nhập)</small></header>
+<main>
+<div class="kpi" id="kpi"></div>
+<div class="cols">
+<div class="card"><h2>Theo người</h2><div class="lg" id="lg1"></div><div id="ng"></div></div>
+<div class="card"><h2>Theo phòng ban</h2><div class="lg" id="lg2"></div><div id="bp"></div></div>
+</div>
+<div class="card"><h2 id="lh"></h2>
+<table><thead><tr><th>Việc</th><th>Người phụ trách</th><th>Phòng ban</th><th>Hạn</th><th>Trễ</th><th>Trạng thái</th></tr></thead><tbody id="tb"></tbody></table>
+<div class="cards" id="cd"></div></div>
+<footer id="ft"></footer>
+</main><div class="tip" id="tip"></div>
+<script>
+var D=null;
+var ENDPOINT='https://script.google.com/macros/s/AKfycbz6VA97qO95ICQuIWhMhEYW8ix0ov1dk7ih6fMfJEgduhIPOvKea_ywkCt5aMSRCDRv_Q/exec'; /* khi đăng: link Apps Script đọc lại Sheet sau khi đăng nhập; trống = dùng bản chụp nhúng */
+var COL={'Xong':'--xong','Đang làm':'--lam','Chưa làm':'--chua','Chờ duyệt':'--duyet','Quá hạn':'--qh'};
+function c(k){return getComputedStyle(document.documentElement).getPropertyValue(COL[k])}
+function pd(s){var m=/^(\d+)\/(\d+)\/(\d+)$/.exec(s||'');return m?new Date(+m[3],+m[2]-1,+m[1]):null}
+function render(D){
+ var t=pd(D.today),R=D.rows.filter(function(r){return r.tt!=='Huỷ'});
+ R.forEach(function(r){var h=pd(r.h);r.qh=r.tt!=='Xong'&&h&&h<t;r.tre=r.qh?Math.round((t-h)/864e5):0;r.mo=r.tt!=='Xong'});
+ var xong=R.filter(function(r){return r.tt==='Xong'}).length,mo=R.length-xong,qh=R.filter(function(r){return r.qh}).length;
+ var kp=[['Đang xử lý (chưa xong)',mo,'--lam'],['Đã xong',xong,'--xong'],['Quá hạn',qh,'--qh']];
+ var h='';kp.forEach(function(k){h+='<div class="k"><span><i style="background:var('+k[2]+')"></i>'+k[0]+'</span><b>'+k[1]+'</b></div>'});
+ h+='<div class="k"><span>Tỷ lệ xong</span><b>'+Math.round(xong*100/R.length)+'%</b><div class="bar"><div style="width:'+(xong*100/R.length)+'%"></div></div></div>';
+ document.getElementById('kpi').innerHTML=h;
+ var ST=['Xong','Đang làm','Chờ duyệt','Chưa làm'];
+ function lg(id){document.getElementById(id).innerHTML=ST.map(function(s){return '<span><i style="background:'+c(s)+'"></i>'+s+'</span>'}).join('')+'<span><i style="background:'+c('Quá hạn')+'"></i>Trong đó quá hạn: số đỏ</span>'}
+ lg('lg1');lg('lg2');
+ function group(key,el){
+  var g={};R.forEach(function(r){var k=r[key];(g[k]=g[k]||{t:0,Xong:0,'Đang làm':0,'Chờ duyệt':0,'Chưa làm':0,qh:0});g[k].t++;g[k][r.tt in g[k]?r.tt:'Chưa làm']++;if(r.qh)g[k].qh++});
+  var ks=Object.keys(g).sort(function(a,b){return g[b].qh-g[a].qh||g[b].t-g[a].t});
+  var mx=Math.max.apply(null,ks.map(function(k){return g[k].t}));
+  var o='';ks.forEach(function(k){var x=g[k];
+   o+='<div class="row"><div class="n" title="'+k+'">'+k+'</div><div class="stk" style="width:'+(x.t*100/mx)+'%">'+ST.map(function(s){return x[s]?'<div data-tip="'+k+' - '+s+': '+x[s]+'" style="flex:'+x[s]+';background:'+c(s)+'"></div>':''}).join('')+'</div><div class="c">'+(x.t-x.Xong)+' mở'+(x.qh?' · <b class="late">'+x.qh+' trễ</b>':'')+'</div></div>'});
+  document.getElementById(el).innerHTML=o}
+ group('ai','ng');group('bp','bp');
+ var L=R.filter(function(r){return r.qh}).sort(function(a,b){return b.tre-a.tre});
+ document.getElementById('lh').textContent='Việc trễ hạn ('+L.length+')';
+ var e=function(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')};
+ document.getElementById('tb').innerHTML=L.length?L.map(function(r){return '<tr><td>'+e(r.t)+'</td><td>'+e(r.ai)+'</td><td>'+e(r.bp)+'</td><td>'+r.h.slice(0,5)+'</td><td class="late">'+r.tre+' ngày</td><td>'+r.tt+'</td></tr>'}).join(''):'<tr><td colspan="6">Không có việc trễ</td></tr>';
+ document.getElementById('cd').innerHTML=L.map(function(r){return '<div class="ct"><b>'+e(r.t)+'</b><span>'+e(r.ai)+' · '+e(r.bp)+' · hạn '+r.h.slice(0,5)+' · <b class="late" style="display:inline">trễ '+r.tre+' ngày</b> · '+r.tt+'</span></div>'}).join('');
+ document.getElementById('sub').textContent='Dữ liệu Sheet lúc '+D.doc+' · '+R.length+' việc (không tính Huỷ)';
+ document.getElementById('ft').textContent='Nguồn: Sheet YG - QUẢN LÝ CÔNG VIỆC VĂN PHÒNG 2026, tab VIỆC (chỉ đọc). Quá hạn = chưa Xong và hạn chót trước hôm nay. "Đang xử lý" gồm Chưa làm, Đang làm, Chờ duyệt; ô trạng thái trống tính là Chưa làm.';
+}
+var KEY='tdvp_tk',timer=null;
+function dang(u,p,im){return fetch(ENDPOINT,{method:'POST',body:JSON.stringify({viec:1,u:u,pin:p})}).then(function(r){return r.json()}).then(function(d){
+ if(d.err){sessionStorage.removeItem(KEY);document.getElementById('lgn').style.display='flex';document.getElementById('le').textContent=d.err==='khoa'?'Nhập sai quá nhiều lần. Thử lại sau 15 phút.':d.err==='chan'?'Tài khoản này không có quyền xem trang việc văn phòng.':'Tên đăng nhập hoặc mã PIN không đúng.';clearInterval(timer);return}
+ document.getElementById('lgn').style.display='none';sessionStorage.setItem(KEY,JSON.stringify([u,p]));render(d);clearInterval(timer);
+ timer=setInterval(function(){dang(u,p,1)},300000)}).catch(function(){document.getElementById('le').textContent='Không kết nối được, thử lại.'})}
+if(!ENDPOINT){if(/dn=1/.test(location.search)){document.getElementById('lgn').style.display='flex'}else render(D)}else{ /* đăng thật: không nhúng dữ liệu, bắt buộc đăng nhập; mở lại tự đọc Sheet */
+ document.getElementById('lgn').style.display='flex';
+ document.getElementById('lf').onsubmit=function(ev){ev.preventDefault();dang(document.getElementById('lu').value.trim().toLowerCase(),document.getElementById('lp').value.trim())};
+ var sv=sessionStorage.getItem(KEY);if(sv){sv=JSON.parse(sv);dang(sv[0],sv[1])}}
+var tip=document.getElementById('tip');
+document.addEventListener('mousemove',function(ev){var t=ev.target.getAttribute&&ev.target.getAttribute('data-tip');if(t){tip.textContent=t;tip.style.display='block';tip.style.left=ev.clientX+10+'px';tip.style.top=ev.clientY+10+'px'}else tip.style.display='none'});
+</script></body></html>
