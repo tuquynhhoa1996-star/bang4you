@@ -867,6 +867,29 @@ var Core = (function () {
     return { ok: true, edits: edits, log: log, khach: { ten: cur.ten, sdt: cur.sdt, row: rowNo } };
   };
 
+  // 12/11/2026 chi Hoa: nut "Nhan khach" cho be dang do sale khac cham nhung qua 30 ngay khong lien he (luat giu khach).
+  // Doi cot SALE sang nguoi bam, NOTE noi them "dd/mm: nhan khach tu sale X ..." (moc moi tinh lai 30 ngay cho nguoi nhan).
+  C.planNhanKhach = function (brand, data, user, rowNo, exp, today) {
+    var cfg = C.BRANDS[brand], d = cfg.data, h = C.header(data[0]), td = C.parseDate(today);
+    if (user.leader) return { ok: false, errors: ['Tài khoản quản lý sửa trực tiếp trên dòng khách, không cần nút nhận khách.'] };
+    if (!T(user.saleName)) return { ok: false, errors: ['Tài khoản chưa có tên sale để nhận khách.'] };
+    var dv = C.dinhViDong(data, h, rowNo, exp, col(h, d.name), col(h, d.phone), -1);
+    if (!dv.ok) return { ok: false, errors: [dv.loi] };
+    rowNo = dv.row; var idx = rowNo - 1, r = data[idx], cur = rowObj(cfg, h, r, idx);
+    if (exp && ((exp.sdt && C.normPhone(exp.sdt) !== cur.sdt) || (exp.ten != null && noDau(exp.ten) !== noDau(cur.ten)))) return { ok: false, errors: ['Dòng này vừa bị thay đổi trong file. Tải lại rồi thử lại.'] };
+    if (!T(cur.sale)) return { ok: false, errors: ['Khách này chưa có sale: bấm Cập nhật và tích "Nhận khách này về tên mình".'] };
+    if (C.sameSale(user.saleName, cur.sale)) return { ok: false, errors: ['Khách này đã đứng tên bạn rồi.'] };
+    cur.noteDu = cur.note; var lg = C.luatGiu(cur, today);
+    if (lg.giu) return { ok: false, errors: ['Chưa nhận được: ' + lg.text] };
+    var sc = col(h, d.sale), nc = col(h, d.note);
+    if (sc < 0) return { ok: false, errors: ['File không có cột ' + d.sale + '.'] };
+    var edits = [{ row: rowNo, col: sc + 1, value: user.saleName, name: d.sale, old: cell(r, sc) }];
+    var lyDo = 'nhận khách từ sale ' + cur.sale + (lg.ngay ? ' (liên hệ gần nhất ' + lg.ngay + ', quá ' + C.RULES.ngayGiuKhach + ' ngày)' : ' (chưa ghi ngày liên hệ)');
+    var add = stamp(td, lyDo, user.ten), log = ['Sale: ' + cur.sale + ' -> ' + user.saleName];
+    if (nc >= 0) { var oldN = cell(r, nc); edits.push({ row: rowNo, col: nc + 1, value: oldN ? oldN + '\n' + add : add, name: 'NOTE', old: oldN }); log.push('Note: + ' + add); }
+    return { ok: true, edits: edits, log: log, khach: { ten: cur.ten, sdt: cur.sdt, row: rowNo } };
+  };
+
   function taiKiMoi(brand, reten, h, r, rowNo, ch, o, td, user, dk) {
     var rc = C.BRANDS[brand].reten, errs = [], d = dk || {}, row = reten[0].map(function () { return ''; }), log = [];
     function chk(list, v, label) { if (v && list && list.length && !hasOpt(list, v)) errs.push(label + ' "' + v + '" không có trong danh sách của file 3.26.'); }
@@ -2930,6 +2953,7 @@ function demoCall(p) {
         if (p.act === 'dsTaiTuc') return ok(Core.ganQuayLai(b, Core.dsTaiTuc(b, d.reten, u, today), d.reten, today));
         var opt = Core.options(b, d.misc, d.data), plan;
         if (p.act === 'themHocThu') plan = Core.planThemHocThu(b, d.data, u, p.f, opt, today);
+        else if (p.act === 'nhanKhach') plan = Core.planNhanKhach(b, d.data, u, Number(p.row), p.exp, today);
         else plan = Core.planCapNhat(b, d.data, u, Number(p.row), p.exp, p.ch, opt, today);
         if (!plan.ok) return ok({ ok: false, loi: plan.errors, trung: !!plan.trung, cungSdt: !!plan.cungSdt, trungTen: !!plan.trungTen, khacSale: !!plan.khacSale, dongTrung: plan.dongTrung || null });
         d.data = Core.apply(d.data, plan);  // chi trong bo nho trinh duyet, mat khi tai lai trang
@@ -3267,7 +3291,19 @@ function timKhacHen(v, ve) {
 function khacList(q) {
   var l = st.kqKhac || []; if (!l.length || (st.kqKhacQ || '') !== (q || '').trim()) return '';
   return '<div class="card" style="background:#fff7e6;border-color:#f0c36d"><b>Bé của sale khác (' + l.length + ')</b><div class="sub">Chỉ xem để tránh chăm trùng. Luật: sale cũ có liên hệ trong 30 ngày gần nhất thì sale cũ giữ, sale leader cơ sở chỉ hỗ trợ; quá 30 ngày thì sale leader cơ sở nhận.</div></div>' +
-    l.map(function (x) { return '<div class="card" style="opacity:.85;background:#fafafa"><b>' + esc(x.ten || '(chưa có tên)') + '</b> · ' + esc(x.sdtChe) + '<div class="sub">' + (x.tt ? 'File 3.26 dòng ' + x.row + (x.khoa ? ' · ' + esc(x.khoa) : '') : 'Dòng ' + x.row) + ' · ' + esc(x.coSo || 'chưa có cơ sở') + ' · Sale <b>' + esc(x.sale || 'chưa có') + '</b>' + (x.hocThu ? ' · ' + esc(x.hocThu) : '') + (x.chot ? ' · ' + esc(x.chot) : '') + '</div><div class="sub" style="color:' + (x.giu ? '#b45309' : '#15803d') + '">' + esc(x.luat) + '</div></div>'; }).join('');
+    l.map(function (x, ix) { return '<div class="card" style="opacity:.85;background:#fafafa"><b>' + esc(x.ten || '(chưa có tên)') + '</b> · ' + esc(x.sdtChe) + '<div class="sub">' + (x.tt ? 'File 3.26 dòng ' + x.row + (x.khoa ? ' · ' + esc(x.khoa) : '') : 'Dòng ' + x.row) + ' · ' + esc(x.coSo || 'chưa có cơ sở') + ' · Sale <b>' + esc(x.sale || 'chưa có') + '</b>' + (x.hocThu ? ' · ' + esc(x.hocThu) : '') + (x.chot ? ' · ' + esc(x.chot) : '') + '</div><div class="sub" style="color:' + (x.giu ? '#b45309' : '#15803d') + '">' + esc(x.luat) + '</div>' + (!x.tt && !x.giu && x.sale && x.sale !== 'chưa ghi' ? '<div class="btns"><button class="pri" onclick="nhanKhachQua(' + ix + ')">Nhận khách này (quá 30 ngày)</button></div>' : '') + '</div>'; }).join('');
+}
+// 12/11/2026 chi Hoa: be cua sale khac qua 30 ngay khong lien he -> sale bam nhan ve ten minh (Core.planNhanKhach kiem lai o may chu)
+function nhanKhachQua(ix) {
+  var x = (st.kqKhac || [])[ix]; if (!x) return;
+  if (!confirm('Nhận bé ' + (x.ten || '') + ' về tên bạn?\nBé đang đứng tên sale ' + x.sale + ', ' + x.luat)) return;
+  bao('Đang nhận khách...');
+  call({ act: 'nhanKhach', row: x.row, exp: { ten: x.ten, sdt: x.sdtChe }, dk: null }).then(function (r) {
+    if (!r.ok) { bao(''); alert((r.loi || ['Không nhận được.']).join('\n')); return; }
+    bao('Đã nhận ' + (x.ten || 'khách') + ' về tên bạn. Tìm lại tên bé để cập nhật.', 2);
+    st.kqKhac = []; st.kqKhacQ = ''; st.ds = null; st.kq = null;
+    var q = st.tab === 'khach' ? st.q : st.hq; try { taiDs(); refresh(); } catch (e) {} if (q) { if ($('#kq')) onq(q); else if ($('#hnBody')) onhq(q); }
+  }).catch(function (e) { bao(''); alert(e.message); });
 }
 
 function pmDs(a, b) { // file khong khai danh sach hinh thuc tien thi van cho chon (07/11/2026, Linh bao loi tai ki 4Y)
