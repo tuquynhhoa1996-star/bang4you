@@ -368,6 +368,34 @@ var Core = (function () {
     }
     return out;
   };
+  // 12/11/2026 chi Hoa (Quyen hoi): khach moi CHUA CHOT (dang xem xet, dang doi CK, chua lien he duoc, chua hen / da hen / da hoc thu)
+  // de sale goi NGAY, khong phai cho 3 ngay. Dau vao: danh sach dsKhach (rowObj). Chi lay khach co hoat dong trong 60 ngay.
+  C.THEO_DOI_NGAY = 60;
+  C.dangTheoDoi = function (ds, today) {
+    var td = C.parseDate(today), tn = C.dayNum(td), yr = td.y, out = [];
+    (ds || []).forEach(function (o) {
+      if (!o || o.tt) return;
+      var cl = N(o.chot), lh = N(o.lienHe), ht = N(o.hocThu);
+      if (cl === N(DONE_CLOSE) || cl === N(FAIL_CLOSE) || cl.indexOf('ĐÃ THÀNH CÔNG') === 0 || cl.indexOf('KHÔNG THÀNH CÔNG') === 0) return;
+      if (lh.indexOf('DATA SAI') === 0) return;
+      var xx = cl.indexOf('ĐANG XEM XÉT') === 0 || cl.indexOf('ĐANG ĐỢI') === 0, clh = lh.indexOf('CHƯA LIÊN HỆ') === 0;
+      if (!xx && !clh && !lh && !ht && !cl) return; // data moi chua goi: da nam o Can goi
+      var lc = latest([C.parseDate(o.ngayGoi, yr), C.parseDate(o.ngayCham, yr)]), lt = lastTrial(o, yr);
+      var act = latest([lc, lt]), age = act ? tn - C.dayNum(act) : null;
+      if (age == null || age > C.THEO_DOI_NGAY) return;
+      var nhom = ht === N('Đã học thử') ? 'daHT' : (ht === N('Hẹn học thử') || (o.ngayHocThu || []).length) ? 'henHT' : clh ? 'chuaLH' : 'chuaHen';
+      var gap = lc ? tn - C.dayNum(lc) : null, tag = [];
+      tag.push(xx ? (cl.indexOf('ĐANG ĐỢI') === 0 ? 'Đang đợi CK' : 'Đang xem xét') : clh ? 'Chưa liên hệ được' : 'Chưa chốt');
+      tag.push({ daHT: 'đã học thử ' + (lt ? C.fmtDate(lt) : ''), henHT: 'hẹn học thử ' + (lt ? C.fmtDate(lt) : ''), chuaLH: 'chưa hẹn học thử', chuaHen: 'chưa hẹn học thử' }[nhom].trim());
+      tag.push(lc ? (gap === 0 ? 'gọi hôm nay' : 'gọi lần cuối ' + C.fmtDate(lc) + ' (' + gap + ' ngày trước)') : 'chưa có ngày gọi');
+      var x = {}; for (var k in o) x[k] = o[k];
+      x.nhom = nhom; x.xemXet = xx ? 1 : 0; x.gap = gap; x.lyDo = tag.join(' · ');
+      out.push(x);
+    });
+    // goi lau nhat len truoc; chua co ngay goi len dau
+    out.sort(function (a, b) { return (b.gap == null ? 1e4 : b.gap) - (a.gap == null ? 1e4 : a.gap) || b.row - a.row; });
+    return out;
+  };
   // Tim trong danh sach da tai ve (cung luat voi timKhach)
   // 10/11/2026 chi Hoa: be co the 1.26 da chot thanh cong + the 3.26 (cung SDT chuan hoa + cung ten, khong phan biet hoa/thuong, dau cach)
   // chi hien 1 the hoc vien 3.26; lich su 1.26 thu thanh 1 dong nho (x.ls126). Chi doi hien thi, khong sua du lieu.
@@ -2901,7 +2929,7 @@ function bao(t, giu) { // dai thong bao nho tren dau man hinh
 var dsHen = 0;
 function taiDs() { // tai ca danh sach khach (1 lan, nen) de o tim kiem ra ngay
   var k = st.brand + '|' + (st.loc || ''), lan = ++dsHen;
-  call({ act: 'dsKhach' }).then(function (r) { if (lan !== dsHen) return; st.ds = r; st.dsKey = k; if (st.q && $('#kq')) onq(st.q); }).catch(function () {});
+  call({ act: 'dsKhach' }).then(function (r) { if (lan !== dsHen) return; st.ds = r; st.dsKey = k; if (st.q && $('#kq')) onq(st.q); else if ($('#kq')) $('#kq').innerHTML = kqList(); else if (st.tab === 'homnay' && $('#hnBody')) $('#hnBody').innerHTML = hnBody(); }).catch(function () {});
   call({ act: 'dsTaiTuc' }).then(function (r) { if (lan !== dsHen) return; st.dsTT = r; if (st.q && $('#kq')) onq(st.q); }).catch(function () {}); // 06/11/2026: hoc sinh 3.26 (tai ki truoc han, bo sung hoc phi)
 }
 function timMay(v) { return Core.locDs(st.ds, v, 30).concat(st.dsTT ? Core.locDs(st.dsTT, v, 20) : []); }
@@ -2959,7 +2987,7 @@ function homView() {
 function hnBody() {
   var h = st.hn, dm = h.dem, s = '';
   if ((st.hq || '').trim().length >= 2) return hqKq();
-  s += '<div class="btns" style="margin:0 0 8px"><button onclick="moHieuQua()">📊 Hiệu quả làm việc</button></div>';
+  var tdl = tdDs(); s += '<div class="btns" style="margin:0 0 8px"><button onclick="moHieuQua()">📊 Hiệu quả làm việc</button><button onclick="moTheoDoi()">👀 Khách đang theo dõi' + (tdl ? ' (' + tdl.length + ')' : '') + '</button></div>';
   s += '<div class="sub" style="margin-bottom:8px">Hôm nay ' + esc(h.ngay) + ' · ' + esc(h.ten) + ' · bấm ô để xem riêng mục đó</div>';
   s += '<div class="chips">' + HN_MUC.map(function (m) { return '<div class="chip' + (st.hnLoc === m[0] ? ' on' : '') + (dm[m[0]] ? '' : ' zero') + '" onclick="hnChon(\'' + m[0] + '\')"><b>' + (dm[m[0]] || 0) + '</b><span>' + m[1] + '</span></div>'; }).join('') + '</div>';
   if (st.hnLoc) s += '<div class="btns" style="margin:-4px 0 4px"><button onclick="hnChon(\'\')">Xem tất cả mục</button></div>';
@@ -3039,12 +3067,26 @@ function khachView() {
   var s = locBar() + '<label>Tìm theo SĐT hoặc tên bé</label><input id="q" value="' + esc(st.q) + '" oninput="onq(this.value)" placeholder="vd 0988... hoặc Nguyễn An"><div id="kq">' + kqList() + '</div>';
   return s;
 }
+// 12/11/2026 chi Hoa (Quyen hoi): khach moi chua chot - sale goi NGAY, khong cho 3 ngay. Tinh tren may tu st.ds (Core.dangTheoDoi)
+var TD_LOC = [['', 'Tất cả'], ['xemXet', 'Đang xem xét'], ['chuaHen', 'Chưa hẹn học thử'], ['henHT', 'Đã hẹn học thử'], ['daHT', 'Học thử chưa chốt'], ['chuaLH', 'Chưa liên hệ được']];
+function tdDs() { if (!st.ds || st.dsKey !== st.brand + '|' + (st.loc || '')) return null; var t = (st.hn && st.hn.ngay) || new Date().toLocaleDateString('en-GB'); if (st.tdK !== st.dsKey + '|' + st.ds.length + '|' + t) { st.td = Core.dangTheoDoi(st.ds, t); st.tdK = st.dsKey + '|' + st.ds.length + '|' + t; } return st.td; }
+function tdChon(k) { st.tdLoc = k; if ($('#kq')) $('#kq').innerHTML = kqList(); }
+function tdView() {
+  var l = tdDs(); if (!l) return '<div class="sub" style="margin:8px 2px">Đang tải danh sách khách đang theo dõi...</div>';
+  var loc = st.tdLoc || '', dem = function (k) { return !k ? l.length : l.filter(function (x) { return k === 'xemXet' ? x.xemXet : x.nhom === k; }).length; };
+  var v = l.filter(function (x) { return !loc || (loc === 'xemXet' ? x.xemXet : x.nhom === loc); });
+  var s = '<h3>Khách đang theo dõi<em>' + l.length + '</em></h3><div class="sub" style="margin-bottom:6px">Khách mới chưa chốt, có gọi hoặc học thử trong 60 ngày. Gọi lâu nhất xếp trên. Gọi được thì bấm Cập nhật, chưa gọi được thì ghi chú.</div>';
+  s += '<div class="locs" style="flex-wrap:wrap;overflow:visible">' + TD_LOC.map(function (m) { return '<button class="' + (loc === m[0] ? 'on' : '') + '" onclick="tdChon(\'' + m[0] + '\')">' + m[1] + ' (' + dem(m[0]) + ')</button>'; }).join('') + '</div>';
+  if (!v.length) return s + '<div class="empty">Không có khách nào</div>';
+  return s + v.slice(0, 60).map(function (x) { var y = {}; for (var k in x) y[k] = x[k]; y.lyDo = ngNgan(x.lyDo); return card(y, 'td'); }).join('') + (v.length > 60 ? '<div class="sub">Hiện 60/' + v.length + ' khách. Gõ tên hoặc SĐT để tìm khách khác.</div>' : '');
+}
+function moTheoDoi(k) { st.tab = 'khach'; st.q = ''; st.kq = []; st.tdLoc = k || ''; render(); window.scrollTo(0, 0); }
 var qt;
 function onq(v) {
   st.q = v; clearTimeout(qt); timKhacHen(v, function () { if ($('#kq')) $('#kq').innerHTML = kqList(); });
   if (st.ds && st.dsKey === st.brand + '|' + (st.loc || '')) { st.kq = timMay(v); if ($('#kq')) $('#kq').innerHTML = kqList(); return; }
   qt = setTimeout(function () { call({ act: 'timKhach', q: v }).then(function (r) { st.kq = r; $('#kq').innerHTML = kqList(); }).catch(function (e) { $('#kq').innerHTML = '<div class="err">' + esc(e.message) + '</div>'; }); }, 350); }
-function kqList() { var kh = khacList(st.q), hv = hvList(st.q), co = /class="card/.test(kh + hv); return (st.kq.length ? Core.gopKq(st.kq).map(kqCard).join('') : co ? '' : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy học viên trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>') + kh + hv; }
+function kqList() { if ((st.q || '').trim().length < 2) return tdView(); var kh = khacList(st.q), hv = hvList(st.q), co = /class="card/.test(kh + hv); return (st.kq.length ? Core.gopKq(st.kq).map(kqCard).join('') : co ? '' : '<div class="empty">' + (st.q.length >= 2 ? 'Không thấy học viên trong phạm vi của bạn' : 'Gõ ít nhất 2 chữ hoặc 4 số') + '</div>') + kh + hv; }
 // 09/11/2026 chi Hoa: hien be cua SALE KHAC (chi xem, che SDT) de khong cham trung. Luat: sale cu lien he trong 30 ngay thi sale cu giu.
 var kht, khSeq = 0;
 // 10/11/2026 chi Hoa: tim ca hoc vien file 2.26 (moi co so, moi tinh trang), moi sale deu thay
@@ -3163,7 +3205,7 @@ function saveNew(confirmSib, okTen) {
 }
 
 // ---------- cap nhat khach ----------
-function findRow(n) { var all = []; ['hocThuHomNay', 'hocThuNgayMai', 'canGoi', 'hocThuChuaChot'].forEach(function (k) { all = all.concat(st.hn ? st.hn[k] : []); }); all = all.concat(st.kq); return all.filter(function (x) { return x.row === n; })[0]; }
+function findRow(n) { var all = []; ['hocThuHomNay', 'hocThuNgayMai', 'canGoi', 'hocThuChuaChot'].forEach(function (k) { all = all.concat(st.hn ? st.hn[k] : []); }); all = all.concat(st.kq || [], st.td || []); return all.filter(function (x) { return x.row === n && !x.tt; })[0]; }
 // ---------- PHIEU DANG KI (hien khi chot Da thanh cong; app them dong vao file danh sach dang ki, HCNS xac nhan) ----------
 function dkHtml(p, khoa, giua) {
   var k = (st.opt.dk && st.opt.dk.khoa) || [];
