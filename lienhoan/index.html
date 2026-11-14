@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đăng kí liên hoan 20/11 - ITALY SPORT & 4YOU SPORT</title>
+<meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f2f5f9;color:#14202e}
+.w{max-width:520px;margin:0 auto;padding:18px 14px 40px}
+.hd{background:linear-gradient(135deg,#0d4c99,#e8590c);color:#fff;border-radius:16px;padding:20px 18px}
+.hd h1{margin:0 0 6px;font-size:22px}.hd p{margin:4px 0;font-size:14px;opacity:.95}
+.c{background:#fff;border-radius:14px;padding:16px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+label.t{display:block;font-weight:600;margin:14px 0 6px;font-size:15px}label.t:first-child{margin-top:0}
+.req{color:#d6336c}
+input[type=text],input[type=tel],textarea{width:100%;padding:11px 12px;border:1px solid #cdd6e0;border-radius:10px;font-size:16px;font-family:inherit}
+textarea{min-height:70px}
+.op{display:flex;flex-wrap:wrap;gap:8px}.op label{flex:1 1 30%;min-width:96px;border:1px solid #cdd6e0;border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:15px;user-select:none}
+.op input{display:none}.op label.on{background:#0d4c99;color:#fff;border-color:#0d4c99}
+.note{font-size:13px;color:#5b6b7c;margin-top:6px}
+button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#e8590c;color:#fff;font-size:17px;font-weight:700}
+button:disabled{opacity:.6}
+.msg{margin-top:12px;padding:12px;border-radius:10px;font-size:15px;display:none}.ok{background:#e6f6ec;color:#146c2e;display:block}.er{background:#fdecec;color:#a61e1e;display:block}
+</style></head><body><div class="w">
+<div class="hd"><h1>Liên hoan 20/11/2026</h1>
+<p>Tri ân thầy cô và toàn thể nhân sự ITALY SPORT và 4YOU SPORT.</p>
+<p>Có giải 3x3 bóng rổ và 3x3 bóng đá, kèm huy chương và quà cho giải.</p>
+<p>Thời gian, địa điểm cụ thể phòng HCNS sẽ báo sau.</p></div>
+<form class="c" id="f" autocomplete="on">
+<label class="t">Họ và tên <span class="req">*</span></label><input type="text" id="ten" maxlength="60" autocomplete="name">
+<label class="t">Số điện thoại <span class="req">*</span></label><input type="tel" id="sdt" maxlength="12" inputmode="numeric" autocomplete="tel">
+<div class="note">Đăng kí lại bằng cùng số điện thoại sẽ sửa bản cũ, không bị tính 2 lần.</div>
+<label class="t">Đơn vị <span class="req">*</span></label>
+<div class="op" data-n="don_vi"><label><input type="radio" name="don_vi" value="ITALY SPORT">ITALY SPORT</label><label><input type="radio" name="don_vi" value="4YOU SPORT">4YOU SPORT</label><label><input type="radio" name="don_vi" value="Văn phòng YG">Văn phòng YG</label></div>
+<label class="t">Vị trí <span class="req">*</span></label>
+<div class="op" data-n="vi_tri"><label><input type="radio" name="vi_tri" value="HLV">HLV</label><label><input type="radio" name="vi_tri" value="QLL">QLL</label><label><input type="radio" name="vi_tri" value="Sale">Sale</label><label><input type="radio" name="vi_tri" value="HCNS">HCNS</label><label><input type="radio" name="vi_tri" value="Văn phòng">Văn phòng</label><label><input type="radio" name="vi_tri" value="Khác">Khác</label></div>
+<label class="t">Anh chị có tham gia liên hoan không? <span class="req">*</span></label>
+<div class="op" data-n="tham_gia"><label><input type="radio" name="tham_gia" value="Có">Có, tôi tham gia</label><label><input type="radio" name="tham_gia" value="Không">Không tham gia được</label></div>
+<label class="t">Đăng kí thi đấu giải 3x3 (không bắt buộc)</label>
+<div class="op" data-n="giai"><label><input type="checkbox" name="giai" value="Bóng rổ 3x3">Bóng rổ 3x3</label><label><input type="checkbox" name="giai" value="Bóng đá 3x3">Bóng đá 3x3</label></div>
+<label class="t">Ghi chú (không bắt buộc)</label><textarea id="gc" maxlength="200" placeholder="Ví dụ: đến muộn, ăn chay..."></textarea>
+<button type="submit" id="bt">Gửi đăng kí</button>
+<div class="msg" id="m"></div>
+</form></div>
+<script>
+const API='https://script.google.com/macros/s/AKfycbz_To_PW0ujf-4pRLU8kXCOLRjsUOuIeFt1p6-DW6Px33M2ejM5yqmzULZI76JIjpyaWA/exec';
+const $=s=>document.querySelector(s);
+document.querySelectorAll('.op input').forEach(i=>i.addEventListener('change',()=>{document.querySelectorAll('.op[data-n="'+i.name+'"] label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));}));
+const v=n=>{const x=document.querySelector('input[name="'+n+'"]:checked');return x?x.value:''};
+const msg=(t,ok)=>{const m=$('#m');m.className='msg '+(ok?'ok':'er');m.textContent=t;};
+$('#f').addEventListener('submit',async e=>{e.preventDefault();
+  const d={ten:$('#ten').value.trim(),sdt:$('#sdt').value.replace(/\D/g,''),don_vi:v('don_vi'),vi_tri:v('vi_tri'),tham_gia:v('tham_gia'),giai:[...document.querySelectorAll('input[name="giai"]:checked')].map(x=>x.value),ghi_chu:$('#gc').value.trim()};
+  if(d.ten.length<3) return msg('Anh chị ghi đủ họ tên.');
+  if(!/^0\d{9}$/.test(d.sdt)) return msg('Số điện thoại chưa đúng (10 số, bắt đầu bằng 0).');
+  if(!d.don_vi||!d.vi_tri||!d.tham_gia) return msg('Anh chị chọn đủ đơn vị, vị trí và có tham gia không.');
+  const b=$('#bt');b.disabled=true;b.textContent='Đang gửi...';
+  try{const r=await (await fetch(API,{method:'POST',body:JSON.stringify({lh:d}),redirect:'follow',credentials:'omit'})).json();
+    if(r.ok) msg(r.sua?'Đã cập nhật đăng kí của anh chị. Cảm ơn anh chị!':'Đăng kí thành công. Cảm ơn anh chị!',true); else msg(r.err||'Chưa gửi được, anh chị thử lại.');
+  }catch(x){msg('Chưa gửi được (mạng yếu?), anh chị thử lại.');}
+  b.disabled=false;b.textContent='Gửi đăng kí';});
+</script></body></html>
