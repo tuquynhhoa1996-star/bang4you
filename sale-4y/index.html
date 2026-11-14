@@ -960,6 +960,9 @@ var Core = (function () {
     ['NGÀY HỌC THỬ','NGÀY HỌC THỬ 1','NGÀY HỌC THỬ 2','NGÀY HỌC THỬ 3'].forEach(giu);
     [['ngaySinh','NGÀY SINH'],['ngayHocThu',col(h,'NGÀY HỌC THỬ')>=0?'NGÀY HỌC THỬ':'NGÀY HỌC THỬ 1']].forEach(function(a){if(T(ch[a[0]])){var date=C.parseDate(T(ch[a[0]]));if(!date)errs.push('Ngày không hợp lệ.');else put(a[1],C.fmtDate(date));}});
     put(rc.sale, C.saleTT(brand, h, r)); // 11/11/2026: dong tai ki moi ghi sale phu trach co so
+    // 14/11/2026 chi Hoa: dang ki them lop o co so khac (vd be Khang hoc NTD, dang ki them Tuyen U12 Vinh Phu): sale chon co so cho dong tai ki moi
+    var csMoi = T(ch.coSo);
+    if (csMoi) { var csOk = (o.base || []).filter(function (x) { return N(x) === N(csMoi); })[0]; if (o.base && o.base.length && !csOk) errs.push('Cơ sở "' + csMoi + '" không có trong danh sách của file 3.26.'); else put(rc.base, csOk || csMoi); }
     var pc = col(h, rc.phone); if (pc >= 0) row[pc] = raw(r, pc).trim();
     var bdCu = cell(r, col(h, 'NGÀY BẮT ĐẦU')), bd = C.parseDate(d.ngayBatDau, td.y), kt = C.parseDate(d.ngayKetThuc, td.y);
     if (T(d.khoaHoc)) put(rc.course, T(d.khoaHoc));
@@ -1039,6 +1042,7 @@ var Core = (function () {
     chk(o.lienHe, lh, 'Tình trạng liên hệ'); chk(o.chot, cl, 'Chốt sale'); chk(o.trangThai, tt, 'Tình trạng học viên'); chk(o.hinhThuc, hf, 'Hình thức học'); chk(o.lyDo, ly, 'Lý do');
     if (lh) setCol(rc.contact, lh, 'Liên hệ');
     if (cl) setCol(rc.close, cl, 'Chốt sale');
+    if (T(ch.coSo) && cl && N(cl) === N(DONE_CLOSE)) { var cs2 = T(ch.coSo), csOk2 = (o.base || []).filter(function (x) { return N(x) === N(cs2); })[0]; if (o.base && o.base.length && !csOk2) errs.push('Cơ sở "' + cs2 + '" không có trong danh sách của file 3.26.'); else setCol(rc.base, csOk2 || cs2, 'Cơ sở'); }
     // 11/11/2026: chot thanh cong -> SALE GOI = sale phu trach co so (sale lam viec nay duoc tinh tai ki)
     if (cl && N(cl) === N(DONE_CLOSE) && sale && !C.sameSale(sale, cell(r, col(h, rc.sale)))) setCol(rc.sale, sale, 'Sale gọi');
     // chot thanh cong ma chua chon tinh trang -> mac dinh Tai dang ki (giong cach sale dang dien)
@@ -3880,6 +3884,7 @@ function openTT(n) {
     (x.note ? '<div class="note">' + esc(x.note) + '</div>' : '') +
     '<div class="row2"><div><label>Ngày sinh</label><input id="t_ns" class="ngay" placeholder="dd/mm/yy" inputmode="numeric"></div><div><label>Ngày học thử</label><input id="t_ngay" class="ngay" placeholder="dd/mm/yy" inputmode="numeric"></div></div>' +
     '<label>Tình trạng liên hệ</label>' + sel('t_lh', o.lienHe, '', '- giữ nguyên -') +
+    '<div id="t_csw" class="hide"><label>Cơ sở học (đổi nếu bé đăng kí thêm lớp ở cơ sở khác)</label>' + selCs('t_cs', (o.base && o.base.length) ? o.base : (st.opt.coSo || []), Core.csKhop(x.coSo, (o.base && o.base.length) ? o.base : (st.opt.coSo || [])) || x.coSo, '- giữ nguyên -') + '</div>' +
     '<button class="btnThu" onclick="chotThu(\'t\')">Thu tiền, lập phiếu thu (tái tục, tái kí trước hạn, bổ sung học phí)</button>' +
     '<label>Chốt sale</label>' + sel('t_chot', o.chot, '', '- giữ nguyên -') +
     '<div id="t_tien" class="hide">' + dkHtml('td', x.khoa, '<div class="row2"><div><label>Học phí thu *</label><input id="t_st" class="tien" inputmode="numeric" oninput="this.dataset.tay=1;tongPT(\'td\')"></div><div><label>Hình thức *</label>' + sel('t_hinh', pmDs(o.payMethod), '') + '</div></div><label>Ngày nhận tiền *</label><input id="t_nt" class="ngay" inputmode="numeric" placeholder="dd/mm/yy" maxlength="10" autocomplete="off">') + bpNut('t', n) + '</div>' +
@@ -3889,13 +3894,14 @@ function openTT(n) {
     '<label class="daGoi"><input type="checkbox" id="t_goi"> Đã gọi được cho phụ huynh</label><div class="sub">Chưa gọi được thì không tích, ghi chú lại (vd "thuê bao, gọi lại tối") rồi bấm Lưu. Bé vẫn nằm ở mục Tái tục để gọi lần sau.</div>' +
     '<div id="te2"></div><div class="btns"><button onclick="closeUpd()">Đóng</button><button class="pri" onclick="saveTT(' + n + ')">Lưu vào 3.26</button></div></div>';
   document.body.appendChild(ov);
-  var chg = function () { var c = $('#t_chot').value; $('#t_tien').className = /^đã thành công/i.test(c) ? '' : 'hide'; $('#t_ly').className = /^không thành công/i.test(c) ? '' : 'hide'; if (/^đã thành công/i.test(c)) { if (!$('#t_nt').value) $('#t_nt').value = homNgay(); if (!$('#td_bd').value) $('#td_bd').value = homNgay(); giaTu('td'); ktTu('td'); } };
+  var chg = function () { var c = $('#t_chot').value; $('#t_tien').className = /^đã thành công/i.test(c) ? '' : 'hide'; $('#t_csw').className = /^đã thành công/i.test(c) ? '' : 'hide'; $('#t_ly').className = /^không thành công/i.test(c) ? '' : 'hide'; if (/^đã thành công/i.test(c)) { if (!$('#t_nt').value) $('#t_nt').value = homNgay(); if (!$('#td_bd').value) $('#td_bd').value = homNgay(); giaTu('td'); ktTu('td'); } };
   var dates=Core.ngaySanCo(x); $('#t_ns').value=dates.ngaySinh; $('#t_ngay').value=dates.ngayHocThu;
   $('#t_chot').onchange = chg;
 }
 function saveTT(n) {
   var x = ttTim(n), g = function (i) { var e = $('#' + i); return e ? e.value : ''; };
   var ch = { ngaySinh:dmy(g('t_ns')), ngayHocThu:dmy(g('t_ngay')), daGoi: $('#t_goi').checked, lienHe: g('t_lh'), chot: g('t_chot'), trangThai: g('t_tt'), hinhThuc: g('t_hf'), lyDo: /^không thành công/i.test(g('t_chot')) ? g('t_lydo') : '', soTien: /^đã thành công/i.test(g('t_chot')) ? g('t_st') : '', hinhThucTien: /^đã thành công/i.test(g('t_chot')) ? g('t_hinh') : '', ngayTien: /^đã thành công/i.test(g('t_chot')) ? dmy(g('t_nt')) : '', ghiNote: g('t_note') };
+  if (/^đã thành công/i.test(ch.chot) && g('t_cs') && Core.N(g('t_cs')) !== Core.N(x.coSo)) ch.coSo = g('t_cs');
   if (!/^đã thành công/i.test(ch.chot)) return luuNen('openTT', n, x, { act: 'capNhatTaiTuc', row: n, exp: { ten: x.ten, sdt: x.sdt, bd: x.bd }, ch: ch, dk: null }, 'te2');
   $('#te2').innerHTML = '<div class="spin">Đang lưu...</div>';
   call({ act: 'capNhatTaiTuc', row: n, exp: { ten: x.ten, sdt: x.sdt, bd: x.bd }, ch: ch, dk: /^đã thành công/i.test(ch.chot) ? dkGet('td') : null, baoPhi: bpCua('t', n) }).then(function (r) {
