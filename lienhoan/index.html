@@ -22,7 +22,7 @@ button:disabled{opacity:.6}
 <div class="hd"><h1>Liên hoan 20/11/2026</h1>
 <p>Tri ân thầy cô và toàn thể nhân sự ITALY SPORT và 4YOU SPORT.</p>
 <p>Có giải 3x3 bóng rổ và 3x3 bóng đá, kèm huy chương và quà cho giải.</p>
-<p>Thời gian, địa điểm cụ thể phòng HCNS sẽ báo sau.</p></div>
+<p><b>Hạn đăng kí: 21:00 ngày 15/11/2026.</b></p></div>
 <form class="c" id="f" autocomplete="on">
 <label class="t">Họ và tên <span class="req">*</span></label><input type="text" id="ten" maxlength="60" autocomplete="name">
 <label class="t">Số điện thoại <span class="req">*</span></label><input type="tel" id="sdt" maxlength="12" inputmode="numeric" autocomplete="tel">
@@ -33,8 +33,9 @@ button:disabled{opacity:.6}
 <div class="op" data-n="vi_tri"><label><input type="radio" name="vi_tri" value="HLV">HLV</label><label><input type="radio" name="vi_tri" value="QLL">QLL</label><label><input type="radio" name="vi_tri" value="Sale">Sale</label><label><input type="radio" name="vi_tri" value="HCNS">HCNS</label><label><input type="radio" name="vi_tri" value="Văn phòng">Văn phòng</label><label><input type="radio" name="vi_tri" value="Khác">Khác</label></div>
 <label class="t">Anh chị có tham gia liên hoan không? <span class="req">*</span></label>
 <div class="op" data-n="tham_gia"><label><input type="radio" name="tham_gia" value="Có">Có, tôi tham gia</label><label><input type="radio" name="tham_gia" value="Không">Không tham gia được</label></div>
-<label class="t">Đăng kí thi đấu giải 3x3 (không bắt buộc)</label>
-<div class="op" data-n="giai"><label><input type="checkbox" name="giai" value="Bóng rổ 3x3">Bóng rổ 3x3</label><label><input type="checkbox" name="giai" value="Bóng đá 3x3">Bóng đá 3x3</label></div>
+<label class="t">Anh chị có tham gia thi đấu giải 3x3 không? <span class="req">*</span></label>
+<div class="op" data-n="giai"><label><input type="checkbox" name="giai" value="Bóng rổ 3x3">Bóng rổ 3x3</label><label><input type="checkbox" name="giai" value="Bóng đá 3x3">Bóng đá 3x3</label><label><input type="checkbox" name="giai" value="Không thi đấu">Không thi đấu</label></div>
+<div class="note">Đá cả 2 giải thì chọn cả 2.</div>
 <label class="t">Ghi chú (không bắt buộc)</label><textarea id="gc" maxlength="200" placeholder="Ví dụ: đến muộn, ăn chay..."></textarea>
 <button type="submit" id="bt">Gửi đăng kí</button>
 <div class="msg" id="m"></div>
@@ -42,7 +43,7 @@ button:disabled{opacity:.6}
 <script>
 const API='https://script.google.com/macros/s/AKfycbz_To_PW0ujf-4pRLU8kXCOLRjsUOuIeFt1p6-DW6Px33M2ejM5yqmzULZI76JIjpyaWA/exec';
 const $=s=>document.querySelector(s);
-document.querySelectorAll('.op input').forEach(i=>i.addEventListener('change',()=>{document.querySelectorAll('.op[data-n="'+i.name+'"] label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));}));
+document.querySelectorAll('.op input').forEach(i=>i.addEventListener('change',()=>{if(i.name==='giai'&&i.checked){document.querySelectorAll('input[name="giai"]').forEach(o=>{if(o!==i&&(i.value==='Không thi đấu'||o.value==='Không thi đấu'))o.checked=false;});}document.querySelectorAll('.op[data-n="'+i.name+'"] label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));}));
 const v=n=>{const x=document.querySelector('input[name="'+n+'"]:checked');return x?x.value:''};
 const msg=(t,ok)=>{const m=$('#m');m.className='msg '+(ok?'ok':'er');m.textContent=t;};
 $('#f').addEventListener('submit',async e=>{e.preventDefault();
@@ -50,6 +51,7 @@ $('#f').addEventListener('submit',async e=>{e.preventDefault();
   if(d.ten.length<3) return msg('Anh chị ghi đủ họ tên.');
   if(!/^0\d{9}$/.test(d.sdt)) return msg('Số điện thoại chưa đúng (10 số, bắt đầu bằng 0).');
   if(!d.don_vi||!d.vi_tri||!d.tham_gia) return msg('Anh chị chọn đủ đơn vị, vị trí và có tham gia không.');
+  if(!d.giai.length) return msg('Anh chị chọn có thi đấu giải 3x3 hay không.');
   const b=$('#bt');b.disabled=true;b.textContent='Đang gửi...';
   try{const r=await (await fetch(API,{method:'POST',body:JSON.stringify({lh:d}),redirect:'follow',credentials:'omit'})).json();
     if(r.ok) msg(r.sua?'Đã cập nhật đăng kí của anh chị. Cảm ơn anh chị!':'Đăng kí thành công. Cảm ơn anh chị!',true); else msg(r.err||'Chưa gửi được, anh chị thử lại.');
