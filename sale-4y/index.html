@@ -46,6 +46,28 @@ textarea{min-height:64px}.row2{display:grid;grid-template-columns:1fr 1fr;gap:8p
 .tk{width:100%;border-collapse:collapse;font-size:13px;background:#fff}.tk th,.tk td{padding:6px 5px;border-bottom:1px solid #e6e9ef;text-align:right;white-space:nowrap}.tk th:first-child,.tk td:first-child{text-align:left;position:sticky;left:0;background:#fff}.tk thead th{background:#eef2f8;color:#334;font-weight:600}.tk tr.tg td{font-weight:700;background:#f7f9fc}.tkw{overflow-x:auto;border-radius:10px;border:1px solid #e1e5ec;margin-bottom:12px}.tkg{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;margin-bottom:12px}.tkg div{background:#fff;border-radius:10px;padding:9px 10px;border:1px solid #e1e5ec}.tkg b{display:block;font-size:20px;color:#13803d}.tkg span{font-size:12px;color:#556}.tkh{font-size:14px;margin:12px 0 6px;color:#223}
 </style></head><body>
 <div id="app"></div>
+<script>
+/* ygproxy-client 16/11/2026: goi Apps Script qua cau noi VPS truoc (khong cookie Google), loi mang thi roi ve goi thang Google. */
+(function () {
+  if (window.__ygp) return; window.__ygp = 1;
+  var PX = 'https://javis.srv2114540.hstgr.cloud/ext/ygproxy/g/';
+  var RE = /^https:\/\/script\.google\.com\/macros\/s\/(AKfycb[\w-]+)\/exec(\?[\s\S]*)?$/;
+  var of = window.fetch.bind(window), SK = 'ygp_bad';
+  function bad() { try { var t = +sessionStorage.getItem(SK) || 0; return t && Date.now() - t < 300000; } catch (e) { return false; } }
+  function mark() { try { sessionStorage.setItem(SK, String(Date.now())); } catch (e) {} }
+  window.fetch = function (u, init) {
+    var s = typeof u === 'string' ? u : (u && u.url), m = s && RE.exec(s);
+    if (!m || bad() || typeof u !== 'string') return of(u, init);
+    var i2 = {}, k; for (k in (init || {})) i2[k] = init[k]; i2.credentials = 'omit';
+    var get = !i2.method || String(i2.method).toUpperCase() === 'GET';
+    return of(PX + m[1] + (m[2] || ''), i2).then(function (r) {
+      if (r.headers.get('x-ygproxy') !== '1') { mark(); return of(u, init); }
+      if (r.status === 429 || r.status === 503 || (get && r.status >= 500)) return of(u, init);
+      return r;
+    }, function () { mark(); return of(u, init); });
+  };
+})();
+</script>
 <script>/* APP SALE ITALY + 4YOU - loi xu ly (thuan, khong goi Sheet). Chay duoc trong Apps Script va Node.
    Du lieu vao: mang 2 chieu nhu Sheet tra ve (dong 0 = tieu de). So dong Sheet = chi so + 1.
    Nguyen tac: tim cot theo TEN tieu de; chi them dong / sua dung o can sua; o co chu khong bi xoa trang. */

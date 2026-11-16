@@ -20,6 +20,28 @@ button:disabled{opacity:.6}#msg{color:#c62828;font-size:14px;min-height:20px;mar
   <div id="msg"></div>
 </form>
 <script>
+/* ygproxy-client 16/11/2026: goi Apps Script qua cau noi VPS truoc (khong cookie Google), loi mang thi roi ve goi thang Google. */
+(function () {
+  if (window.__ygp) return; window.__ygp = 1;
+  var PX = 'https://javis.srv2114540.hstgr.cloud/ext/ygproxy/g/';
+  var RE = /^https:\/\/script\.google\.com\/macros\/s\/(AKfycb[\w-]+)\/exec(\?[\s\S]*)?$/;
+  var of = window.fetch.bind(window), SK = 'ygp_bad';
+  function bad() { try { var t = +sessionStorage.getItem(SK) || 0; return t && Date.now() - t < 300000; } catch (e) { return false; } }
+  function mark() { try { sessionStorage.setItem(SK, String(Date.now())); } catch (e) {} }
+  window.fetch = function (u, init) {
+    var s = typeof u === 'string' ? u : (u && u.url), m = s && RE.exec(s);
+    if (!m || bad() || typeof u !== 'string') return of(u, init);
+    var i2 = {}, k; for (k in (init || {})) i2[k] = init[k]; i2.credentials = 'omit';
+    var get = !i2.method || String(i2.method).toUpperCase() === 'GET';
+    return of(PX + m[1] + (m[2] || ''), i2).then(function (r) {
+      if (r.headers.get('x-ygproxy') !== '1') { mark(); return of(u, init); }
+      if (r.status === 429 || r.status === 503 || (get && r.status >= 500)) return of(u, init);
+      return r;
+    }, function () { mark(); return of(u, init); });
+  };
+})();
+</script>
+<script>
 (function () {
 var API = 'https://script.google.com/macros/s/AKfycbxVvbAjXnDirwauw3n8Lxtk0ZHzt6c6l6tj40ThchZbjKAOyEn7W2RToA9uTHkZLGle8w/exec';
 var KEY = 'bdh4you_token', TT = 'hcns', SLOT = location.pathname;
