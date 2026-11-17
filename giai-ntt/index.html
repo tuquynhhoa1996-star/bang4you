@@ -31,6 +31,7 @@ h2{font-size:18px;color:#0d4c99;margin:0 0 10px}
 .yt{background:#fff8ef;border:1px solid #fbd9a8}.yt li{margin:8px 0;font-size:15px;line-height:1.5}.yt ul{padding-left:20px;margin:0}
 .inf{display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13.5px}.inf div{background:#f5f8fc;border-radius:10px;padding:10px}.inf b{display:block;font-size:15px;color:#14202e}
 .cta{display:block;text-align:center;background:#f08c00;color:#fff;text-decoration:none;font-weight:700;font-size:17px;padding:14px;border-radius:12px;margin-top:14px}
+.hl{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.hl a{flex:1 1 45%;text-align:center;background:#0d4c99;color:#fff;text-decoration:none;border-radius:10px;padding:9px 4px;font-weight:700;font-size:15px}
 </style></head><body><div class="w">
 <div class="hero"><div class="ov"></div><div class="in">
 <span class="pill">MIỄN PHÍ - CÓ THẦY HƯỚNG DẪN</span>
@@ -54,12 +55,12 @@ h2{font-size:18px;color:#0d4c99;margin:0 0 10px}
 <div class="c yt"><h2>Bố mẹ hoàn toàn yên tâm</h2><ul>
 <li><b>Con chưa biết chơi cũng không sao.</b> Mỗi đội có thầy huấn luyện viên đi cùng, hướng dẫn luật chơi, cách chuyền, cách ném ngay trên sân.</li>
 <li><b>Trung tâm hỗ trợ toàn bộ kinh phí.</b> Sân thi đấu được kẻ vẽ chuẩn, rổ, bóng, áo đội, trọng tài, huy chương và quà đều do trung tâm lo. Gia đình không đóng bất kì khoản nào.</li>
-<li><b>An toàn là trên hết.</b> Các em khởi động kĩ cùng thầy, mỗi trận ngắn khoảng 7-8 phút, đội được chia cân sức theo khối.</li>
+<li><b>An toàn là trên hết.</b> Các em khởi động kĩ cùng thầy, mỗi trận khoảng 10-15 phút, đội được chia cân sức theo khối.</li>
 </ul></div>
 
 <div class="c"><h2>Hình ảnh một giải trung tâm đã tổ chức</h2>
 <img class="ph" src="img/160.jpg" style="height:210px" alt="">
-<div class="cap">Cả lớp mang băng rôn xuống sân cổ vũ đội nhà (Hội khoẻ Phù Đổng THCS Hưng Bình).</div>
+<div class="cap">Cả lớp mang băng rôn xuống sân cổ vũ đội nhà.</div>
 <div class="g2"><img class="ph" src="img/029.jpg" alt=""><img class="ph" src="img/106.jpg" alt=""><img class="ph" src="img/058.jpg" alt=""><img class="ph" src="img/170.jpg" alt=""></div>
 <div class="cap">Nhiều bạn lần đầu cầm bóng rổ vẫn chơi hết mình.</div></div>
 
@@ -67,6 +68,7 @@ h2{font-size:18px;color:#0d4c99;margin:0 0 10px}
 <div class="inf">
 <div>Thời gian<b>Sáng thứ Ba 24/11</b></div><div>Địa điểm<b>Sân trường</b></div>
 <div>Hình thức<b>Bóng rổ 3x3 nam</b></div><div>Chi phí<b>Miễn phí</b></div></div>
+<div style="margin-top:12px;font-size:14px">Bố mẹ cần hỏi thêm, gọi <b>Hotline Bóng rổ ITALY SPORT</b>:</div><div class="hl"><a href="tel:0904979662">📞 0904.979.662</a><a href="tel:0904959662">📞 0904.959.662</a><a href="tel:0904960662">📞 0904.960.662</a><a href="tel:0904707662">📞 0904.707.662</a></div>
 <a class="cta" href="#f">Đăng kí cho con ngay</a>
 <div class="note" style="text-align:center">Hạn đăng kí: <b>17h00 thứ Bảy 21/11/2026</b></div></div>
 
@@ -78,11 +80,12 @@ h2{font-size:18px;color:#0d4c99;margin:0 0 10px}
 <div class="op" data-n="choi"><label><input type="radio" name="choi" value="Chưa chơi bao giờ">Chưa chơi bao giờ</label><label><input type="radio" name="choi" value="Biết chơi một chút">Biết chơi một chút</label><label><input type="radio" name="choi" value="Đang tập ở CLB/trung tâm">Đang tập ở CLB, trung tâm</label></div>
 <label class="t">Chiều cao (cm, không bắt buộc)</label><input type="tel" id="cao" maxlength="3" inputmode="numeric" placeholder="Ví dụ: 152">
 <div class="note">Để Ban tổ chức chia đội cân sức.</div>
-<label class="t">Số điện thoại phụ huynh (không bắt buộc)</label><input type="tel" id="sdt" maxlength="12" inputmode="numeric">
-<div class="note">Chỉ dùng để báo lịch thi đấu khi cần.</div>
+<label class="t">Số điện thoại bố/mẹ <span class="req">*</span></label><input type="tel" id="sdt" maxlength="12" inputmode="numeric">
+<div class="note">Để trung tâm liên hệ xác nhận và báo lịch thi đấu.</div>
 <label class="t">Ghi chú (không bắt buộc)</label><textarea id="gc" maxlength="200" placeholder="Ví dụ: muốn chung đội với bạn..."></textarea>
 <button type="submit" id="bt">Gửi đăng kí</button>
 <div class="msg" id="m"></div>
+<div class="note">Trung tâm sẽ liên hệ phụ huynh để xác nhận đăng kí. Hotline ITALY SPORT: 0904.979.662 - 0904.959.662 - 0904.960.662 - 0904.707.662</div>
 <div class="note">Một bạn đăng kí giúp cả lớp cũng được: gửi xong, ô Lớp được giữ lại để nhập bạn tiếp theo. Gửi lại cùng Họ tên và Lớp sẽ sửa bản cũ.</div>
 </form></div>
 <script>
@@ -118,7 +121,7 @@ $('#f').addEventListener('submit',async e=>{e.preventDefault();
   if(d.ten.length<4||d.ten.indexOf(' ')<0) return msg('Em ghi đủ họ và tên nhé.');
   if(!/^[678][A-Z]{0,2}\d{0,2}$/.test(d.lop)) return msg('Lớp chưa đúng (ví dụ 6A1, 7B). Giải dành cho khối 6, 7, 8.');
   if(!d.gioi||!d.choi) return msg('Chọn mức đã chơi bóng rổ của con nhé.');
-  if(d.sdt&&!/^0\d{9}$/.test(d.sdt)) return msg('Số điện thoại phụ huynh chưa đúng (10 số), không có thì để trống.');
+  if(!/^0\d{9}$/.test(d.sdt)) return msg('Số điện thoại bố/mẹ là bắt buộc (10 số, bắt đầu bằng 0).');
   const b=$('#bt');b.disabled=true;b.textContent='Đang gửi...';
   try{const r=await (await fetch(API,{method:'POST',body:JSON.stringify({gt:d}),redirect:'follow',credentials:'omit'})).json();
     if(r.ok){msg((r.sua?'Đã cập nhật đăng kí của ':'Đăng kí thành công cho ')+d.ten+' ('+d.lop+'). Hẹn gặp em sáng 24/11!',true);
