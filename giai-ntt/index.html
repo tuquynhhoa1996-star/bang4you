@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Đăng kí Giải bóng rổ 3x3 - THCS Nguyễn Trường Tộ 2026</title>
+<meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f2f5f9;color:#14202e}
+.w{max-width:520px;margin:0 auto;padding:18px 14px 40px}
+.hd{background:linear-gradient(135deg,#0d4c99,#f08c00);color:#fff;border-radius:16px;padding:20px 18px}
+.hd h1{margin:0 0 6px;font-size:22px}.hd p{margin:4px 0;font-size:14px;opacity:.95}
+.c{background:#fff;border-radius:14px;padding:16px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+label.t{display:block;font-weight:600;margin:14px 0 6px;font-size:15px}label.t:first-child{margin-top:0}
+.req{color:#d6336c}
+input[type=text],input[type=tel],textarea{width:100%;padding:11px 12px;border:1px solid #cdd6e0;border-radius:10px;font-size:16px;font-family:inherit}
+textarea{min-height:70px}
+.op{display:flex;flex-wrap:wrap;gap:8px}.op label{flex:1 1 30%;min-width:96px;border:1px solid #cdd6e0;border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:15px;user-select:none}
+.op input{display:none}.op label.on{background:#0d4c99;color:#fff;border-color:#0d4c99}
+.note{font-size:13px;color:#5b6b7c;margin-top:6px}
+button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#f08c00;color:#fff;font-size:17px;font-weight:700}
+button:disabled{opacity:.6}
+.msg{margin-top:12px;padding:12px;border-radius:10px;font-size:15px;display:none}.ok{background:#e6f6ec;color:#146c2e;display:block}.er{background:#fdecec;color:#a61e1e;display:block}
+.sm{font-size:13px;opacity:.9}.lk{display:block;text-align:center;margin-top:10px;font-size:14px;color:#0d4c99}
+</style></head><body><div class="w">
+<div class="hd"><h1>Giải bóng rổ 3x3 học sinh khối 6, 7, 8</h1>
+<p>Chào mừng Ngày Văn hoá Việt Nam 24/11/2026</p>
+<p>Trường THCS Nguyễn Trường Tộ phối hợp Trung tâm bóng rổ ITALY SPORT</p>
+<p><b>Thi đấu: sáng thứ Ba 24/11/2026 tại sân trường.</b></p>
+<p><b>Hạn đăng kí: 17h00 thứ Bảy 21/11/2026.</b></p>
+<p class="sm">Miễn phí. Không cần biết chơi trước, Ban tổ chức chia đội cân sức.</p></div>
+<form class="c" id="f" autocomplete="on">
+<label class="t">Họ và tên học sinh <span class="req">*</span></label><input type="text" id="ten" maxlength="60" autocomplete="name">
+<label class="t">Lớp <span class="req">*</span></label><input type="text" id="lop" maxlength="6" placeholder="Ví dụ: 6A1, 7B, 8C2" autocapitalize="characters">
+<label class="t">Giới tính <span class="req">*</span></label>
+<div class="op" data-n="gioi"><label><input type="radio" name="gioi" value="Nam">Nam</label><label><input type="radio" name="gioi" value="Nữ">Nữ</label></div>
+<label class="t">Em đã chơi bóng rổ chưa? <span class="req">*</span></label>
+<div class="op" data-n="choi"><label><input type="radio" name="choi" value="Chưa chơi bao giờ">Chưa chơi bao giờ</label><label><input type="radio" name="choi" value="Biết chơi một chút">Biết chơi một chút</label><label><input type="radio" name="choi" value="Đang tập ở CLB/trung tâm">Đang tập ở CLB, trung tâm</label></div>
+<label class="t">Chiều cao (cm, không bắt buộc)</label><input type="tel" id="cao" maxlength="3" inputmode="numeric" placeholder="Ví dụ: 152">
+<div class="note">Để Ban tổ chức chia đội cân sức.</div>
+<label class="t">Số điện thoại phụ huynh (không bắt buộc)</label><input type="tel" id="sdt" maxlength="12" inputmode="numeric">
+<div class="note">Chỉ dùng để báo lịch thi đấu khi cần.</div>
+<label class="t">Ghi chú (không bắt buộc)</label><textarea id="gc" maxlength="200" placeholder="Ví dụ: muốn chung đội với bạn..."></textarea>
+<button type="submit" id="bt">Gửi đăng kí</button>
+<div class="msg" id="m"></div>
+<div class="note">Một bạn đăng kí giúp cả lớp cũng được: gửi xong, ô Lớp được giữ lại để nhập bạn tiếp theo. Gửi lại cùng Họ tên và Lớp sẽ sửa bản cũ.</div>
+</form></div>
+<script>
+/* ygproxy-client 16/11/2026: goi Apps Script qua cau noi VPS truoc (khong cookie Google), loi mang thi roi ve goi thang Google. */
+(function () {
+  if (window.__ygp) return; window.__ygp = 1;
+  var PX = 'https://javis.srv2114540.hstgr.cloud/ext/ygproxy/g/';
+  var RE = /^https:\/\/script\.google\.com\/macros\/s\/(AKfycb[\w-]+)\/exec(\?[\s\S]*)?$/;
+  var of = window.fetch.bind(window), SK = 'ygp_bad';
+  function bad() { try { var t = +sessionStorage.getItem(SK) || 0; return t && Date.now() - t < 300000; } catch (e) { return false; } }
+  function mark() { try { sessionStorage.setItem(SK, String(Date.now())); } catch (e) {} }
+  window.fetch = function (u, init) {
+    var s = typeof u === 'string' ? u : (u && u.url), m = s && RE.exec(s);
+    if (!m || bad() || typeof u !== 'string') return of(u, init);
+    var i2 = {}, k; for (k in (init || {})) i2[k] = init[k]; i2.credentials = 'omit';
+    var get = !i2.method || String(i2.method).toUpperCase() === 'GET';
+    return of(PX + m[1] + (m[2] || ''), i2).then(function (r) {
+      if (r.headers.get('x-ygproxy') !== '1') { mark(); return of(u, init); }
+      if (r.status === 429 || r.status === 503 || (get && r.status >= 500)) return of(u, init);
+      return r;
+    }, function () { mark(); return of(u, init); });
+  };
+})();
+</script>
+<script>
+const API='https://script.google.com/macros/s/AKfycbw1KDGE5d9ETrXz26duzLATvTkeMTXMfa35zzHpa0xDItOb0dZDRVmxeMN1SVT8FaZw/exec';
+const $=s=>document.querySelector(s);
+document.querySelectorAll('.op input').forEach(i=>i.addEventListener('change',()=>{document.querySelectorAll('.op[data-n="'+i.name+'"] label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));}));
+const v=n=>{const x=document.querySelector('input[name="'+n+'"]:checked');return x?x.value:''};
+const msg=(t,ok)=>{const m=$('#m');m.className='msg '+(ok?'ok':'er');m.textContent=t;};
+$('#f').addEventListener('submit',async e=>{e.preventDefault();
+  const d={ten:$('#ten').value.trim(),lop:$('#lop').value.toUpperCase().replace(/\s+/g,''),gioi:v('gioi'),choi:v('choi'),cao:$('#cao').value.replace(/\D/g,''),sdt:$('#sdt').value.replace(/\D/g,''),ghi_chu:$('#gc').value.trim()};
+  if(d.ten.length<4||d.ten.indexOf(' ')<0) return msg('Em ghi đủ họ và tên nhé.');
+  if(!/^[678][A-Z]{0,2}\d{0,2}$/.test(d.lop)) return msg('Lớp chưa đúng (ví dụ 6A1, 7B). Giải dành cho khối 6, 7, 8.');
+  if(!d.gioi||!d.choi) return msg('Em chọn giới tính và mức đã chơi bóng rổ nhé.');
+  if(d.sdt&&!/^0\d{9}$/.test(d.sdt)) return msg('Số điện thoại phụ huynh chưa đúng (10 số), không có thì để trống.');
+  const b=$('#bt');b.disabled=true;b.textContent='Đang gửi...';
+  try{const r=await (await fetch(API,{method:'POST',body:JSON.stringify({gt:d}),redirect:'follow',credentials:'omit'})).json();
+    if(r.ok){msg((r.sua?'Đã cập nhật đăng kí của ':'Đăng kí thành công cho ')+d.ten+' ('+d.lop+'). Hẹn gặp em sáng 24/11!',true);
+      ['#ten','#cao','#sdt','#gc'].forEach(s=>$(s).value='');document.querySelectorAll('.op input').forEach(i=>{i.checked=false;});document.querySelectorAll('.op label').forEach(l=>l.classList.remove('on'));}
+    else msg(r.err||'Chưa gửi được, em thử lại nhé.');
+  }catch(x){msg('Chưa gửi được (mạng yếu?), em thử lại nhé.');}
+  b.disabled=false;b.textContent='Gửi đăng kí';});
+</script></body></html>
