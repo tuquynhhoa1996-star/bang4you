@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Ý kiến phụ huynh sau buổi giao hữu - ITALY SPORT</title>
+<meta name="robots" content="noindex">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:#f2f5f9;color:#14202e}
+.w{max-width:520px;margin:0 auto;padding:18px 14px 40px}
+.hd{background:linear-gradient(135deg,#0d4c99,#f08c00);color:#fff;border-radius:16px;padding:20px 18px}
+.hd h1{margin:0 0 8px;font-size:21px;line-height:1.25}.hd p{margin:4px 0;font-size:14.5px;opacity:.95}
+.c{background:#fff;border-radius:14px;padding:16px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+label.t{display:block;font-weight:600;margin:16px 0 6px;font-size:15px}label.t:first-of-type{margin-top:0}
+.req{color:#d6336c}
+input[type=text],input[type=tel],textarea{width:100%;padding:11px 12px;border:1px solid #cdd6e0;border-radius:10px;font-size:16px;font-family:inherit}
+textarea{min-height:70px}
+.op{display:flex;flex-wrap:wrap;gap:8px}.op label{flex:1 1 40%;min-width:96px;border:1px solid #cdd6e0;border-radius:10px;padding:10px;text-align:center;cursor:pointer;font-size:15px;user-select:none}
+.op.n label{flex:1 1 15%;min-width:0}.op.w1 label{flex:1 1 100%;text-align:left}
+.op input{display:none}.op label.on{background:#0d4c99;color:#fff;border-color:#0d4c99}
+.note{font-size:13px;color:#5b6b7c;margin-top:6px}
+button{width:100%;margin-top:18px;padding:14px;border:0;border-radius:12px;background:#f08c00;color:#fff;font-size:17px;font-weight:700}
+button:disabled{opacity:.6}
+.msg{margin-top:12px;padding:12px;border-radius:10px;font-size:15px;display:none}.ok{background:#e6f6ec;color:#146c2e;display:block}.er{background:#fdecec;color:#a61e1e;display:block}
+</style></head><body><div class="w">
+<div class="hd"><h1>Thầy cô xin ý kiến bố mẹ sau buổi giao hữu</h1>
+<p>Buổi giao hữu bóng rổ U9 và U11, chiều 22/11/2026, ITALY SPORT.</p>
+<p>Chỉ mất khoảng 2 phút. Ý kiến của bố mẹ giúp thầy cô làm tốt hơn cho các con.</p></div>
+<form class="c" id="f" autocomplete="on">
+<label class="t">Họ tên bố/mẹ <span class="req">*</span></label><input type="text" id="ten" maxlength="60" autocomplete="name">
+<label class="t">Số điện thoại <span class="req">*</span></label><input type="tel" id="sdt" maxlength="12" inputmode="numeric" autocomplete="tel">
+<label class="t">Tên con <span class="req">*</span></label><input type="text" id="con" maxlength="60">
+<label class="t">Con thuộc nhóm nào? <span class="req">*</span></label><div class="op" data-n="nhom"><label><input type="radio" name="nhom" value="U9">U9</label><label><input type="radio" name="nhom" value="U11">U11</label></div>
+<label class="t">Con đang học ở cơ sở nào? <span class="req">*</span></label><input type="text" id="cs" maxlength="80" placeholder="Ví dụ: Trung Đô, Hưng Dũng...">
+<label class="t">Bố mẹ hài lòng về buổi giao hữu ở mức nào? <span class="req">*</span></label><div class="op n" data-n="hl"><label><input type="radio" name="hl" value="1">1</label><label><input type="radio" name="hl" value="2">2</label><label><input type="radio" name="hl" value="3">3</label><label><input type="radio" name="hl" value="4">4</label><label><input type="radio" name="hl" value="5">5</label></div>
+<div class="note">1 là chưa hài lòng, 5 là rất hài lòng.</div>
+<label class="t">Điều con thích nhất trong buổi giao hữu?</label><textarea id="thich" maxlength="200"></textarea>
+<label class="t">Bố mẹ có góp ý gì cho thầy cô không?</label><textarea id="gy" maxlength="400"></textarea>
+<label class="t">Con có muốn được thi đấu thường xuyên hơn không? <span class="req">*</span></label><div class="op w1" data-n="td"><label><input type="radio" name="td" value="Có, con rất muốn">Có, con rất muốn</label><label><input type="radio" name="td" value="Tuỳ lịch của con">Tuỳ lịch của con</label><label><input type="radio" name="td" value="Chưa cần">Chưa cần</label></div>
+<label class="t">Bố mẹ quan tâm đến điều gì? (chọn được nhiều) <span class="req">*</span></label><div class="op w1" data-n="qt"><label><input type="checkbox" name="qt" value="Đăng kí dự giải sắp tới">Đăng kí dự giải sắp tới</label><label><input type="checkbox" name="qt" value="Lớp nâng cao / đội tuyển">Lớp nâng cao / đội tuyển</label><label><input type="checkbox" name="qt" value="Học kèm riêng 1-1 hoặc nhóm nhỏ">Học kèm riêng 1-1 hoặc nhóm nhỏ</label><label><input type="checkbox" name="qt" value="Chưa có nhu cầu">Chưa có nhu cầu</label></div>
+<label class="t">Bố mẹ mong con đạt được gì? (chọn được nhiều)</label><div class="op" data-n="mt"><label><input type="checkbox" name="mt" value="Thể lực khoẻ hơn">Thể lực khoẻ hơn</label><label><input type="checkbox" name="mt" value="Tự tin hơn">Tự tin hơn</label><label><input type="checkbox" name="mt" value="Kỹ thuật bóng rổ">Kỹ thuật bóng rổ</label><label><input type="checkbox" name="mt" value="Thi đấu, thi giải">Thi đấu, thi giải</label></div>
+<label class="t">Thời gian nào thuận tiện để thầy cô gọi tư vấn?</label><div class="op" data-n="gio"><label><input type="radio" name="gio" value="Sáng 8h-11h">Sáng 8h-11h</label><label><input type="radio" name="gio" value="Trưa 11h-14h">Trưa 11h-14h</label><label><input type="radio" name="gio" value="Chiều 14h-17h">Chiều 14h-17h</label><label><input type="radio" name="gio" value="Tối sau 19h">Tối sau 19h</label><label><input type="radio" name="gio" value="Cuối tuần">Cuối tuần</label></div>
+<button type="submit" id="bt">Gửi ý kiến</button>
+<div class="msg" id="m"></div>
+<div class="note">Thầy cô chỉ dùng thông tin này để lắng nghe và tư vấn khi bố mẹ cần. Hotline ITALY SPORT: 0904.979.662 - 0904.959.662 - 0904.960.662 - 0904.707.662</div>
+</form></div>
+<script>
+/* ygproxy-client 16/11/2026: goi Apps Script qua cau noi VPS truoc (khong cookie Google), loi mang thi roi ve goi thang Google. */
+(function () {
+  if (window.__ygp) return; window.__ygp = 1;
+  var PX = 'https://javis.srv2114540.hstgr.cloud/ext/ygproxy/g/';
+  var RE = /^https:\/\/script\.google\.com\/macros\/s\/(AKfycb[\w-]+)\/exec(\?[\s\S]*)?$/;
+  var of = window.fetch.bind(window), SK = 'ygp_bad';
+  function bad() { try { var t = +sessionStorage.getItem(SK) || 0; return t && Date.now() - t < 300000; } catch (e) { return false; } }
+  function mark() { try { sessionStorage.setItem(SK, String(Date.now())); } catch (e) {} }
+  window.fetch = function (u, init) {
+    var s = typeof u === 'string' ? u : (u && u.url), m = s && RE.exec(s);
+    if (!m || bad() || typeof u !== 'string') return of(u, init);
+    var i2 = {}, k; for (k in (init || {})) i2[k] = init[k]; i2.credentials = 'omit';
+    var get = !i2.method || String(i2.method).toUpperCase() === 'GET';
+    return of(PX + m[1] + (m[2] || ''), i2).then(function (r) {
+      if (r.headers.get('x-ygproxy') !== '1') { mark(); return of(u, init); }
+      if (r.status === 429 || r.status === 503 || (get && r.status >= 500)) return of(u, init);
+      return r;
+    }, function () { mark(); return of(u, init); });
+  };
+})();
+</script>
+<script>
+const API='https://script.google.com/macros/s/AKfycbw1KDGE5d9ETrXz26duzLATvTkeMTXMfa35zzHpa0xDItOb0dZDRVmxeMN1SVT8FaZw/exec';
+const $=s=>document.querySelector(s);
+document.querySelectorAll('.op input').forEach(i=>i.addEventListener('change',()=>{document.querySelectorAll('.op[data-n="'+i.name+'"] label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));}));
+const v=n=>{const x=document.querySelector('input[name="'+n+'"]:checked');return x?x.value:''};
+const vs=n=>[...document.querySelectorAll('input[name="'+n+'"]:checked')].map(x=>x.value);
+const msg=(t,ok)=>{const m=$('#m');m.className='msg '+(ok?'ok':'er');m.textContent=t;};
+$('#f').addEventListener('submit',async e=>{e.preventDefault();
+  const d={ten:$('#ten').value.trim(),sdt:$('#sdt').value.replace(/\D/g,''),con:$('#con').value.trim(),nhom:v('nhom'),cs:$('#cs').value.trim(),hl:v('hl'),thich:$('#thich').value.trim(),gop_y:$('#gy').value.trim(),td:v('td'),qt:vs('qt'),mt:vs('mt'),gio:v('gio')};
+  if(d.ten.length<2) return msg('Bố mẹ ghi họ tên giúp thầy cô nhé.');
+  if(!/^0\d{9}$/.test(d.sdt)) return msg('Số điện thoại cần đủ 10 số, bắt đầu bằng 0.');
+  if(d.con.length<2) return msg('Bố mẹ ghi tên con giúp thầy cô nhé.');
+  if(!d.nhom) return msg('Bố mẹ chọn nhóm của con (U9 hoặc U11) nhé.');
+  if(d.cs.length<2) return msg('Bố mẹ ghi cơ sở con đang học nhé.');
+  if(!d.hl) return msg('Bố mẹ chọn mức hài lòng từ 1 đến 5 nhé.');
+  if(!d.td) return msg('Bố mẹ chọn con có muốn thi đấu thường xuyên hơn không nhé.');
+  if(!d.qt.length) return msg('Bố mẹ chọn ít nhất 1 mục quan tâm nhé.');
+  const b=$('#bt');b.disabled=true;b.textContent='Đang gửi...';
+  try{const r=await (await fetch(API,{method:'POST',body:JSON.stringify({ks:d}),redirect:'follow',credentials:'omit'})).json();
+    if(r.ok){$('#f').innerHTML='<h2 style="color:#0d4c99">Cảm ơn bố mẹ!</h2><p style="font-size:16px;line-height:1.6">Thầy cô đã nhận được ý kiến của bố mẹ về buổi giao hữu của '+d.con.replace(/[<>&]/g,'')+'. Nếu bố mẹ cần tư vấn, thầy cô sẽ liên hệ vào thời gian bố mẹ đã chọn.</p>';return;}
+    msg(r.err||'Chưa gửi được, bố mẹ thử lại nhé.');
+  }catch(x){msg('Chưa gửi được (mạng yếu?), bố mẹ thử lại nhé.');}
+  b.disabled=false;b.textContent='Gửi ý kiến';});
+</script></body></html>
