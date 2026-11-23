@@ -4918,7 +4918,7 @@ function hoanCard(z) {
 function hoanAct(z) {
   var q = st.hoanQ || {}, t = Core.N(z.tt), id = esc(z.so), s = '';
   if (q.duyet && t === Core.N(Core.HOAN_TT.CHO)) s = '<input id="hl_' + id + '" placeholder="Lý do (bắt buộc khi từ chối)"><div class="btns"><button onclick="hoanLenh(\'' + id + '\',\'hoanTuChoi\')">Từ chối</button><button class="pri" onclick="hoanLenh(\'' + id + '\',\'hoanDuyet\')">Duyệt hoàn</button></div>';
-  else if (q.xn && t === Core.N(Core.HOAN_TT.DUYET)) s = '<label>Ngày hoàn tiền</label><input id="hn_' + id + '" value="' + esc(Core.fmtDate(new Date())) + '" inputmode="numeric"><input id="hl_' + id + '" placeholder="Ghi chú (không bắt buộc)"><div class="btns"><button class="pri" onclick="hoanLenh(\'' + id + '\',\'hoanXong\')">Đã hoàn tiền</button></div>';
+  else if (q.xn && t === Core.N(Core.HOAN_TT.DUYET)) s = '<label>Ngày hoàn tiền</label><input id="hn_' + id + '" value="' + esc((function(n){return ('0'+n.getDate()).slice(-2)+'/'+('0'+(n.getMonth()+1)).slice(-2)+'/'+n.getFullYear();})(new Date())) + '" inputmode="numeric"><input id="hl_' + id + '" placeholder="Ghi chú (không bắt buộc)"><div class="btns"><button class="pri" onclick="hoanLenh(\'' + id + '\',\'hoanXong\')">Đã hoàn tiền</button></div>';
   return s ? '<div id="ha_' + id + '">' + s + '<div id="he_' + id + '"></div></div>' : '';
 }
 function hoanLenh(so, act) {
