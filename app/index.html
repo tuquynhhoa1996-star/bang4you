@@ -91,9 +91,7 @@ function ve(kq) {
       html += '<div class="the"><h2>' + APP[n].ten + '</h2>' + h + '</div>';
     }
   });
-  // 16/11/2026 chi Hoa: nut Tai chinh YG (phieu chi + hoan hoc phi) cho taichinh, lanhdao, is-lanhdao
-  if (['taichinh', 'lanhdao', 'is-lanhdao'].some(function (q) { return kq.bang.indexOf(q) >= 0; }))
-    html += '<div class="the"><h2>TÀI CHÍNH YG (CHUNG 2 BÊN)</h2>' + nut('../taichinh/', 'Tài chính YG - phiếu chi, hoàn học phí', true) + '</div>';
+  // 23/11/2026: muc Tai chinh YG da ngung, duyet hoan hoc phi lam trong App Sale
   if (kq.bang.indexOf('lanhdao') >= 0 || kq.bang.indexOf('is-lanhdao') >= 0)
     html += '<div class="the"><h2>Quản trị tài khoản (chỉ lãnh đạo)</h2>' + nut('https://docs.google.com/spreadsheets/d/1malCD0rq0purRNzbWkjIRtMTAAYP94_qQeIH4lV8xI8/edit', 'File phân quyền chung') + '</div>';
   $('nut').innerHTML = html || '<div class="the"><p class="ghi">Tài khoản này chưa được cấp quyền dùng mục nào. Liên hệ quản lý.</p></div>';

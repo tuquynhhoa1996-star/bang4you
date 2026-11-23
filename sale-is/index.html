@@ -1,6 +1,6 @@
 <!doctype html>
 <html lang="vi"><head>
-<meta name="appsale-release" content="20261122-gioithieu-v1"><meta charset="utf-8">
+<meta name="appsale-release" content="20261123-hoan-duyet-v1"><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>App Sale ITALY SPORT</title>
 <style>
@@ -2264,6 +2264,36 @@ var Core = (function () {
     var l = x.sdts && x.sdts.length ? x.sdts.map(function (p) { return p.sdt; }) : [x.sdt];
     return l.some(function (p) { return !!m[C.hvKey(x.ten, p)]; });
   };
+
+  // ---------- 23/11/2026 chi Hoa: trang Tai chinh YG huy, DUYET + "Đã hoàn" lam ngay o App Sale ----------
+  // q = {duyet: chi Hoa (quanly), xn: chi Hoa hoac ke toan Linh}. loai: 'duyet' | 'tuchoi' | 'xong'. Tra {ok, msg} hoac {ok, upd:{tt, duyet, ngayHoan, nguoiXN, ghiChu}}.
+  // Cot Q-U cua tab HOAN HOC PHI: tt (Q), duyet (R), ngayHoan (S), nguoiXN (T), ghiChu (U). Luat cu giu nguyen: chi "Đã hoàn" moi tru doanh so.
+  C.hoanDoi = function (z, loai, q, f, nowStr, who, today) {
+    f = f || {}; q = q || {};
+    if (!z) return { ok: false, msg: 'Không tìm thấy phiếu hoàn.' };
+    var ly = T(f.ly).replace(/\r/g, '').slice(0, 300);
+    if (/^[=+\-@]/.test(ly)) ly = "'" + ly;
+    var gc0 = T(z.ghiChu), ts = who + ' ' + nowStr;
+    if (loai === 'duyet' || loai === 'tuchoi') {
+      if (!q.duyet) return { ok: false, msg: 'Chỉ chị Hoa được duyệt hoặc từ chối hoàn học phí.' };
+      if (NC(z.tt) !== NC(C.HOAN_TT.CHO)) return { ok: false, msg: 'Phiếu đang ở trạng thái "' + z.tt + '", không duyệt lại được.' };
+      if (loai === 'tuchoi') {
+        if (!ly) return { ok: false, msg: 'Ghi lý do từ chối.' };
+        return { ok: true, upd: { tt: C.HOAN_TT.TU_CHOI, duyet: ts, ghiChu: (gc0 ? gc0 + ' | ' : '') + 'Từ chối: ' + ly } };
+      }
+      return { ok: true, upd: { tt: C.HOAN_TT.DUYET, duyet: ts } };
+    }
+    if (loai === 'xong') {
+      if (!q.xn) return { ok: false, msg: 'Chỉ chị Hoa hoặc kế toán được xác nhận đã hoàn tiền.' };
+      if (NC(z.tt) !== NC(C.HOAN_TT.DUYET)) return { ok: false, msg: 'Phiếu chưa được chị duyệt (đang "' + z.tt + '").' };
+      var d = C.parseDate(T(f.ngay) || today, 0);
+      if (!d) return { ok: false, msg: 'Nhập ngày hoàn tiền dạng dd/mm/yyyy.' };
+      var t = C.parseDate(today, 0);
+      if (t && C.dayNum(d) > C.dayNum(t)) return { ok: false, msg: 'Ngày hoàn tiền không được sau hôm nay.' };
+      return { ok: true, upd: { tt: C.HOAN_TT.DA_HOAN, ngayHoan: C.fmtDate(d), nguoiXN: ts, ghiChu: ly ? (gc0 ? gc0 + ' | ' : '') + ly : gc0 } };
+    }
+    return { ok: false, msg: 'Lệnh phiếu hoàn không hợp lệ.' };
+  };
   return C;
 })();
 
@@ -3684,6 +3714,7 @@ function kqCard(x) { if (x.tt) { if (!x._lb) { x._lb = 1; x.lyDo = 'Học viên 
 function boot() {
   try { st.loc = localStorage.getItem(locKey()) || ''; } catch (e) { st.loc = ''; }
   $('#app').innerHTML = '<div class="spin">Đang tải...</div>';
+  if (st.me && st.me.tc && st.me.brands[st.brand] && !st.me.brands[st.brand].leader && st.tab === 'homnay') { st.tab = 'hoan'; st.hn = st.hn || {}; render(); taiHoan(); return; } // ke toan: vao thang Phieu hoan
   var c = docNho(); if (c && !DEMO) { st.hn = c.hn; st.opt = c.opt; render(); bao('Đang cập nhật...'); } // mo app: hien ngay ban luu lan truoc, cap nhat o nen
   Promise.all([call({ act: 'homNay' }), call({ act: 'tuyChon' })]).then(function (a) { st.hn = a[0]; st.opt = a[1]; ghiNho(); render(); bao(); taiDs(); taiBl(true); })
     .catch(function (e) { if (c && !DEMO) { bao('Mất kết nối, đang xem dữ liệu lần trước', 1); return; } $('#app').innerHTML = '<div class="login"><div class="err">' + esc(e.message) + '</div><div class="btns"><button onclick="logout()">Đăng nhập lại</button><button class="pri" onclick="boot()">Thử lại</button></div></div>'; });
@@ -4807,15 +4838,15 @@ function bdLuu() {
 function taiHoan() {
   if (!st.me) return;
   var k = st.brand + '|' + (st.loc || '');
-  call({ act: 'dsHoan' }).then(function (r) { st.hoanDs = r.ds || []; st.hoanDa = (r.daHoan || []).reduce(function (a, x) { a[x] = 1; return a; }, {}); st.hoanKey = k; st.hoanLoi = '';
+  call({ act: 'dsHoan' }).then(function (r) { st.hoanDs = r.ds || []; st.hoanDa = (r.daHoan || []).reduce(function (a, x) { a[x] = 1; return a; }, {}); st.hoanQ = r.q || null; st.hoanKey = k; st.hoanLoi = '';
     if ($('#h_ds')) $('#h_ds').innerHTML = hoanDsHtml(); if ($('#h_n')) $('#h_n').textContent = st.hoanDs.length; if ($('#kq') && st.q) onq(st.q); })
     .catch(function (e) { st.hoanLoi = e.message; if ($('#h_ds')) $('#h_ds').innerHTML = hoanDsHtml(); });
 }
 function hoanView() {
   var lead = st.me.brands[st.brand].leader;
   return '<div class="btns" style="margin-top:0"><button onclick="setTab(\'phieu\')">‹ Kho phiếu thu</button></div><h3 style="margin-top:6px">Phiếu hoàn học phí</h3>' +
-    '<div class="hoanNhac">Học phí không hoàn trừ trường hợp đặc biệt. Phiếu chờ chị Hoa duyệt.</div>' +
-    '<div class="sub">Lập đề nghị ở đây. Chị Hoa duyệt, kế toán chuyển tiền rồi bấm "Đã hoàn". Chỉ khi đã hoàn, doanh số của sale chốt khoá đó mới bị trừ.</div>' +
+    '<div class="hoanNhac">Học phí không hoàn trừ trường hợp đặc biệt. Phiếu chờ chị Hoa duyệt ngay tại đây.</div>' +
+    '<div class="sub">Lập đề nghị ở đây. Chị Hoa duyệt hoặc từ chối trên phiếu, kế toán chuyển tiền rồi bấm "Đã hoàn". Chỉ khi đã hoàn, doanh số của sale chốt khoá đó mới bị trừ (tính vào tháng hoàn tiền).</div>' +
     '<label>Tìm bé *</label><input id="h_q" placeholder="tên bé hoặc SĐT" autocomplete="off" oninput="onHq(this.value)"><div id="h_goi"></div>' +
     '<div id="h_be">' + hoanBeHtml() + '</div><div id="h_kq"></div>' +
     '<h3>' + (lead ? 'Tất cả phiếu hoàn' : 'Phiếu hoàn của tôi') + '<em id="h_n">' + (st.hoanDs ? st.hoanDs.length : '...') + '</em></h3>' + '<div id="h_ds">' + hoanDsHtml() + '</div>';
@@ -4881,7 +4912,26 @@ function hoanCard(z) {
     '<div class="sub">Hoàn <b>' + Core.tien(z.tien) + 'đ</b> · ' + esc(z.traBang) + ' · sale chốt: ' + esc(z.saleChot || '?') + '</div>' +
     '<div class="sub">Lập ' + esc(Core.fmtDate(Core.parseDate(String(z.tg).replace(/^(\d{4})-(\d{2})-(\d{2}).*$/, '$3/$2/$1'))) + String(z.tg).slice(10)) + ' · ' + esc(z.saleLap) + '</div>' +
     (z.ngayHoan ? '<div class="sub">Đã hoàn ngày ' + esc(z.ngayHoan) + (z.nguoiXN ? ' · ' + esc(z.nguoiXN) : '') + '</div>' : '') + (z.duyet ? '<div class="sub">Duyệt: ' + esc(z.duyet) + '</div>' : '') +
-    '<div class="note">Lý do: ' + esc(z.lyDo) + '</div></div>';
+    '<div class="note">Lý do: ' + esc(z.lyDo) + '</div>' + (z.ghiChu ? '<div class="note">Ghi chú: ' + esc(z.ghiChu) + '</div>' : '') + hoanAct(z) + '</div>';
+}
+// 23/11/2026: chi Hoa duyet / tu choi, chi Hoa hoac ke toan bam "Đã hoàn" ngay tren the phieu
+function hoanAct(z) {
+  var q = st.hoanQ || {}, t = Core.N(z.tt), id = esc(z.so), s = '';
+  if (q.duyet && t === Core.N(Core.HOAN_TT.CHO)) s = '<input id="hl_' + id + '" placeholder="Lý do (bắt buộc khi từ chối)"><div class="btns"><button onclick="hoanLenh(\'' + id + '\',\'hoanTuChoi\')">Từ chối</button><button class="pri" onclick="hoanLenh(\'' + id + '\',\'hoanDuyet\')">Duyệt hoàn</button></div>';
+  else if (q.xn && t === Core.N(Core.HOAN_TT.DUYET)) s = '<label>Ngày hoàn tiền</label><input id="hn_' + id + '" value="' + esc(Core.fmtDate(new Date())) + '" inputmode="numeric"><input id="hl_' + id + '" placeholder="Ghi chú (không bắt buộc)"><div class="btns"><button class="pri" onclick="hoanLenh(\'' + id + '\',\'hoanXong\')">Đã hoàn tiền</button></div>';
+  return s ? '<div id="ha_' + id + '">' + s + '<div id="he_' + id + '"></div></div>' : '';
+}
+function hoanLenh(so, act) {
+  var g = function (p) { var e = $('#' + p + so); return e ? e.value.trim() : ''; }, e = $('#he_' + so);
+  if (act === 'hoanTuChoi' && !g('hl_')) { e.innerHTML = '<div class="err">Ghi lý do từ chối.</div>'; return; }
+  if (act === 'hoanXong' && !confirm('Xác nhận ĐÃ chuyển tiền hoàn cho phiếu ' + so + '? Doanh số sale chốt sẽ bị trừ.')) return;
+  e.innerHTML = '<div class="spin">Đang lưu...</div>';
+  call({ act: act, so: so, ly: g('hl_'), ngay: g('hn_') }).then(function (r) {
+    if (!r.ok) { e.innerHTML = [].concat(r.loi).map(function (m) { return '<div class="err">' + esc(m) + '</div>'; }).join(''); return; }
+    if (r.phieu) st.hoanDs = (st.hoanDs || []).map(function (z) { return z.so === so ? r.phieu : z; });
+    if ($('#h_ds')) $('#h_ds').innerHTML = hoanDsHtml(); taiHoan();
+    if ($('#h_kq')) $('#h_kq').innerHTML = '<div class="ok">' + esc(r.thongBao || 'Đã lưu.') + '</div>'; window.scrollTo(0, 0);
+  }).catch(function (x) { e.innerHTML = '<div class="err">' + esc(x.message) + ' Chưa lưu, bấm lại.</div>'; });
 }
 function hoanDsHtml() {
   if (st.hoanLoi) return '<div class="err">Chưa tải được phiếu hoàn: ' + esc(st.hoanLoi) + '</div>';
