@@ -48,9 +48,9 @@ button:disabled{opacity:.6}
 <div class="lich">📍 Sân trường THCS Nguyễn Trường Tộ (đường Namjugun)<br>🕠 <b>17h30 - 19h00</b>, Thứ 3, Thứ 4, Thứ 5, Thứ 7, Chủ nhật<br>🎁 <b>Đăng kí học trong tháng 12/2026 tặng 1 quả bóng rổ</b></div>
 <div class="op w1" data-n="hoc"><label><input type="radio" name="hoc" value="Đăng kí học tháng 12 (nhận quà bóng)">Đăng kí cho con học tháng 12 (nhận quà bóng)</label><label><input type="radio" name="hoc" value="Cho con học thử 1 buổi miễn phí trước">Cho con học thử 1 buổi miễn phí trước</label><label><input type="radio" name="hoc" value="Cần thầy cô tư vấn thêm">Cần thầy cô tư vấn thêm</label><label><input type="radio" name="hoc" value="Chưa có nhu cầu">Chưa có nhu cầu</label></div>
 <label class="t">Con học được những buổi nào? (chọn được nhiều)</label><div class="op" data-n="buoi"><label><input type="checkbox" name="buoi" value="Thứ 3">Thứ 3</label><label><input type="checkbox" name="buoi" value="Thứ 4">Thứ 4</label><label><input type="checkbox" name="buoi" value="Thứ 5">Thứ 5</label><label><input type="checkbox" name="buoi" value="Thứ 7">Thứ 7</label><label><input type="checkbox" name="buoi" value="Chủ nhật">Chủ nhật</label></div>
-<label class="t">Bố mẹ có muốn con dự giải ITALYSPORT AUTUMN CUP 2026? <span class="req">*</span></label>
-<div class="note" style="margin:0 0 8px">Giải bóng rổ dành cho học viên ITALY SPORT. Thầy cô sẽ gọi báo lịch thi đấu và chi tiết.</div>
-<div class="op w1" data-n="ac"><label><input type="radio" name="ac" value="Có, cho con đăng kí">Có, cho con đăng kí</label><label><input type="radio" name="ac" value="Cần thêm thông tin">Cần thêm thông tin</label><label><input type="radio" name="ac" value="Chưa tham gia">Chưa tham gia</label></div>
+<div id="acb" style="display:none"><label class="t">Dành cho các bạn lớp 6: bố mẹ có muốn con dự giải ITALYSPORT AUTUMN CUP 2026? <span class="req">*</span></label>
+<div class="note" style="margin:0 0 8px">Giải bóng rổ dành cho học viên ITALY SPORT, phù hợp lứa tuổi lớp 6. Thầy cô sẽ gọi báo lịch thi đấu và chi tiết.</div>
+<div class="op w1" data-n="ac"><label><input type="radio" name="ac" value="Có, cho con đăng kí">Có, cho con đăng kí</label><label><input type="radio" name="ac" value="Cần thêm thông tin">Cần thêm thông tin</label><label><input type="radio" name="ac" value="Chưa tham gia">Chưa tham gia</label></div></div>
 <label class="t">Thời gian nào thuận tiện để thầy cô gọi tư vấn?</label><div class="op" data-n="gio"><label><input type="radio" name="gio" value="Sáng 8h-11h">Sáng 8h-11h</label><label><input type="radio" name="gio" value="Trưa 11h-14h">Trưa 11h-14h</label><label><input type="radio" name="gio" value="Chiều 14h-17h">Chiều 14h-17h</label><label><input type="radio" name="gio" value="Tối sau 19h">Tối sau 19h</label><label><input type="radio" name="gio" value="Cuối tuần">Cuối tuần</label></div>
 <label class="t">Bố mẹ có góp ý gì cho thầy cô không?</label><textarea id="gy" maxlength="400"></textarea>
 <button type="submit" id="bt">Gửi phiếu</button>
@@ -85,9 +85,10 @@ const $=s=>document.querySelector(s);
 document.querySelectorAll('.op input').forEach(i=>i.addEventListener('change',()=>{document.querySelectorAll('.op[data-n="'+i.name+'"] label').forEach(l=>l.classList.toggle('on',l.querySelector('input').checked));}));
 const v=n=>{const x=document.querySelector('input[name="'+n+'"]:checked');return x?x.value:''};
 const vs=n=>[...document.querySelectorAll('input[name="'+n+'"]:checked')].map(x=>x.value);
+const lop6=()=>/^\s*(lớp\s*)?6/i.test($('#lop').value);$('#lop').addEventListener('input',()=>{$('#acb').style.display=lop6()?'block':'none';});
 const msg=(t,ok)=>{const m=$('#m');m.className='msg '+(ok?'ok':'er');m.textContent=t;};
 $('#f').addEventListener('submit',async e=>{e.preventDefault();
-  const d={br:'ntt',ten:$('#ten').value.trim(),sdt:$('#sdt').value.replace(/\D/g,''),con:$('#con').value.trim(),lop:$('#lop').value.trim(),gd:v('gd'),hl:v('hl'),hoc:v('hoc'),buoi:vs('buoi'),ac:v('ac'),gio:v('gio'),gop_y:$('#gy').value.trim()};
+  const d={br:'ntt',ten:$('#ten').value.trim(),sdt:$('#sdt').value.replace(/\D/g,''),con:$('#con').value.trim(),lop:$('#lop').value.trim(),gd:v('gd'),hl:v('hl'),hoc:v('hoc'),buoi:vs('buoi'),ac:lop6()?v('ac'):'Không áp dụng (không phải lớp 6)',gio:v('gio'),gop_y:$('#gy').value.trim()};
   if(d.ten.length<2) return msg('Bố mẹ ghi họ tên giúp thầy cô nhé.');
   if(!/^0\d{9}$/.test(d.sdt)) return msg('Số điện thoại cần đủ 10 số, bắt đầu bằng 0.');
   if(d.con.length<2) return msg('Bố mẹ ghi tên con giúp thầy cô nhé.');
