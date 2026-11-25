@@ -1,0 +1,77 @@
+<!doctype html><html lang="vi"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>Báo cáo ngoài giờ - Ban Chuyên môn</title>
+<style>*{box-sizing:border-box}body{font-family:system-ui,sans-serif;background:#f4f6f5;margin:0;color:#111}.w{max-width:520px;margin:auto;background:#fff;padding:16px;min-height:100vh}h1{font-size:18px;display:flex;justify-content:space-between;align-items:center;gap:8px;margin:0 0 8px}.tag{background:#e3f2fd;color:#1565c0;font-size:12px;padding:3px 8px;border-radius:10px;white-space:nowrap}
+.tabs{display:flex;gap:6px;margin:8px 0 4px}.tabs button{flex:1;margin:0;padding:9px;background:#eef1ef;color:#333;font-size:14px}.tabs button.on{background:#1b7f3b;color:#fff}
+label{display:block;margin-top:14px;font-weight:600}input,select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:15px;font-family:inherit}.r label{font-weight:400;display:inline-block;margin-right:8px}.r input{width:auto}.t{display:flex;gap:8px}
+button{margin-top:18px;width:100%;padding:12px;background:#1b7f3b;color:#fff;border:0;border-radius:8px;font-size:16px}button:disabled{opacity:.5}
+.note{background:#fff8e1;border:1px solid #ffe082;border-radius:8px;padding:8px 10px;font-size:13px;margin-top:10px}.ok{background:#e8f5e9;border:1px solid #a5d6a7;border-radius:8px;padding:10px;margin-top:12px}.er{background:#ffebee;border:1px solid #ef9a9a;border-radius:8px;padding:10px;margin-top:12px}
+.th{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.th span{font-size:12px;background:#eee;border-radius:6px;padding:3px 6px}
+.it{border:1px solid #ddd;border-radius:10px;padding:10px;margin-top:10px;font-size:14px}.it b{display:block}.it small{color:#555}.st{display:inline-block;font-size:12px;padding:2px 8px;border-radius:10px;margin-left:6px}.s0{background:#fff3cd}.s1{background:#c8e6c9}.s2{background:#ffcdd2}
+.bt{display:flex;gap:6px}.bt button{margin-top:8px;padding:9px;font-size:14px}.bt .y{background:#1b7f3b}.bt .n{background:#c62828}.bt .c{background:#777}.hid{display:none}a{color:#1565c0}</style></head><body><div class="w">
+<h1>BÁO CÁO NGOÀI GIỜ <span class="tag">Ban Chuyên môn</span></h1>
+<div class="tabs"><button id="t1" class="on" type="button">Gửi báo cáo</button><button id="t2" type="button">HCNS duyệt</button></div>
+<div id="p1"><form id="f">
+<div class="note">Chỉ nhận báo cáo trong <b>48 tiếng</b> sau giờ kết thúc. Quá 48 tiếng báo trực tiếp HCNS.</div>
+<label>1. Ngày thực hiện</label><input type="date" name="ngay" id="ngay" required>
+<label>2. Nhân sự thực hiện</label><select name="ten" required><option value="">- Chọn nhân sự -</option><option value="Nguyễn Tống Gia Long">Nguyễn Tống Gia Long (bóng rổ)</option><option value="Cao Long Nhật">Cao Long Nhật (bóng rổ)</option><option value="Nguyễn Phúc Nam">Nguyễn Phúc Nam (bóng rổ)</option><option value="Trần Ngọc Đức">Trần Ngọc Đức (bóng rổ)</option><option value="Nguyễn Quốc Anh">Nguyễn Quốc Anh (bóng rổ)</option><option value="Phạm Hồng Định">Phạm Hồng Định (bóng đá)</option><option value="Vi Bảo Quốc">Vi Bảo Quốc (bóng đá)</option><option value="Vi Thanh Thỏa">Vi Thanh Thỏa (bóng đá)</option></select>
+<label>3. Nhóm công việc</label><div class="r"><label><input type="radio" name="nhom" value="Giảng dạy" checked>Giảng dạy</label><label><input type="radio" name="nhom" value="Đào tạo">Đào tạo</label><label><input type="radio" name="nhom" value="Thi đấu">Thi đấu</label><label><input type="radio" name="nhom" value="Sự kiện">Sự kiện</label><label><input type="radio" name="nhom" value="Khác">Công việc chuyên môn khác</label></div>
+<label>4. Địa điểm</label><select name="dd" id="dd" required><option value="">- Chọn địa điểm -</option><optgroup label="Bóng rổ"><option>Ecopark</option><option>SOS</option><option>THSP Nghệ An</option><option>Đội tuyển</option><option>ĐH Vinh</option><option>NTĐTP</option><option>Vinh Tân</option><option>THCS Hưng Bình</option><option>THCS Hồng Sơn</option><option>Sân BFA</option><option>Cửa Lò</option><option>THCS Bến Thủy</option><option>Diễn Châu</option><option>Hưng Nguyên</option><option>THCS Quán Bàu</option><option>CLC Quán Bàu</option><option>Lê Lợi</option><option>Nghi Phú</option><option>CN 1</option><option>CN 2</option></optgroup><optgroup label="Bóng đá"><option>Trung Long</option><option>Vinaconex</option><option>34A Kim Đồng</option><option>Nguyễn Trãi</option><option>Quân đội HTLO</option><option>471</option><option>Nghi Phú II</option><option>Đại học Vinh</option><option>Nguyễn Trường Tộ</option><option>Kĩ Thuật 3</option><option>Đầu Máy</option></optgroup><option value="Khác">Địa điểm khác (tự ghi)</option></select><input name="ddKhac" id="ddk" placeholder="Nhập địa điểm khác" style="display:none;margin-top:8px">
+<label>5. Giờ bắt đầu / kết thúc</label><div class="t"><input type="time" name="bd" required><input type="time" name="kt" required></div>
+<label>6. Nội dung công việc và kết quả</label><textarea name="nd" rows="4" placeholder="Mô tả công việc, lý do làm ngoài giờ và kết quả thực hiện..." required minlength="10"></textarea>
+<label>7. Hình ảnh minh chứng (tối đa 5 ảnh)</label><input type="file" id="anh" accept="image/*" multiple><div class="th" id="th"></div>
+<label>8. Người xác nhận</label><select disabled><option>HCNS</option></select>
+<button id="gui">Gửi báo cáo</button><div id="kq"></div></form></div>
+<div id="p2" class="hid">
+<div id="lg"><div class="note">Dành cho HCNS. Đăng nhập bằng tài khoản và mã PIN văn phòng (như bảng điều hành).</div><label>Tên đăng nhập</label><input id="u" autocomplete="username" autocapitalize="none"><label>Mã PIN</label><input id="pin" type="password" inputmode="numeric" autocomplete="current-password"><button id="dn" type="button">Đăng nhập</button><div id="lk"></div></div>
+<div id="ds" class="hid"><div class="note" id="who"></div><div class="t" style="margin-top:8px"><select id="loc"><option value="Chờ duyệt">Chờ duyệt</option><option value="">Tất cả</option><option>Đã duyệt</option><option>Không duyệt</option></select></div><div id="list"></div></div></div>
+</div>
+<script>/* ygproxy-client 16/11/2026: goi Apps Script qua cau noi VPS truoc (khong cookie Google), loi mang thi roi ve goi thang Google. */
+(function () {
+  if (window.__ygp) return; window.__ygp = 1;
+  var PX = 'https://javis.srv2114540.hstgr.cloud/ext/ygproxy/g/';
+  var RE = /^https:\/\/script\.google\.com\/macros\/s\/(AKfycb[\w-]+)\/exec(\?[\s\S]*)?$/;
+  var of = window.fetch.bind(window), SK = 'ygp_bad';
+  function bad() { try { var t = +sessionStorage.getItem(SK) || 0; return t && Date.now() - t < 300000; } catch (e) { return false; } }
+  function mark() { try { sessionStorage.setItem(SK, String(Date.now())); } catch (e) {} }
+  window.fetch = function (u, init) {
+    var s = typeof u === 'string' ? u : (u && u.url), m = s && RE.exec(s);
+    if (!m || bad() || typeof u !== 'string') return of(u, init);
+    var i2 = {}, k; for (k in (init || {})) i2[k] = init[k]; i2.credentials = 'omit';
+    var get = !i2.method || String(i2.method).toUpperCase() === 'GET';
+    return of(PX + m[1] + (m[2] || ''), i2).then(function (r) {
+      if (r.headers.get('x-ygproxy') !== '1') { mark(); return of(u, init); }
+      if (r.status === 429 || r.status === 503 || (get && r.status >= 500)) return of(u, init);
+      return r;
+    }, function () { mark(); return of(u, init); });
+  };
+})();
+var API='https://script.google.com/macros/s/AKfycbxVvbAjXnDirwauw3n8Lxtk0ZHzt6c6l6tj40ThchZbjKAOyEn7W2RToA9uTHkZLGle8w/exec';
+var $=function(i){return document.getElementById(i)};
+function post(o){return fetch(API,{method:'POST',body:JSON.stringify(o)}).then(function(r){return r.json()})}
+function p2(n){return('0'+n).slice(-2)}
+var hn=new Date(),d2=new Date(hn.getTime()-2*864e5),fd=function(d){return d.getFullYear()+'-'+p2(d.getMonth()+1)+'-'+p2(d.getDate())};
+$('ngay').max=fd(hn);$('ngay').min=fd(d2);$('ngay').value=fd(hn);
+$('dd').onchange=function(){var k=$('ddk');k.style.display=this.value=='Khác'?'block':'none';k.required=this.value=='Khác'};
+$('t1').onclick=function(){$('p1').className='';$('p2').className='hid';$('t1').className='on';$('t2').className=''};
+$('t2').onclick=function(){$('p2').className='';$('p1').className='hid';$('t2').className='on';$('t1').className=''};
+var imgs=[];
+function nen(file){return new Promise(function(ok,no){var fr=new FileReader();fr.onerror=no;fr.onload=function(){var im=new Image();im.onerror=no;im.onload=function(){var s=Math.min(1,1600/Math.max(im.width,im.height)),q=.78,c=document.createElement('canvas');c.width=Math.round(im.width*s);c.height=Math.round(im.height*s);c.getContext('2d').drawImage(im,0,0,c.width,c.height);var u=c.toDataURL('image/jpeg',q);while(u.length*0.75>1400000&&q>.3){q-=.1;u=c.toDataURL('image/jpeg',q)}ok(u)};im.src=fr.result};fr.readAsDataURL(file)})}
+$('anh').onchange=function(){var fs=[].slice.call(this.files).slice(0,5);imgs=[];$('th').innerHTML='Đang xử lý ảnh...';Promise.all(fs.map(nen)).then(function(a){imgs=a;$('th').innerHTML=a.map(function(u,i){return '<span>Ảnh '+(i+1)+' ('+Math.round(u.length*0.75/1024)+' KB)</span>'}).join('')}).catch(function(){$('th').innerHTML='Không đọc được ảnh, chọn lại.'})};
+$('f').onsubmit=function(e){e.preventDefault();var f=e.target,v=function(n){return f.elements[n].value},nhom=f.querySelector('input[name=nhom]:checked').value;
+ if(v('kt')<=v('bd')){$('kq').innerHTML='<div class="er">Giờ kết thúc phải lớn hơn giờ bắt đầu.</div>';return}
+ $('gui').disabled=true;$('kq').innerHTML='Đang gửi...';
+ post({ngg:'gui',ngay:v('ngay'),ten:v('ten'),nhom:nhom,dd:v('dd'),ddKhac:v('ddKhac'),bd:v('bd'),kt:v('kt'),nd:v('nd'),anh:imgs.map(function(u){return{t:'image/jpeg',b64:u}})}).then(function(d){$('gui').disabled=false;
+  if(d.ok){$('kq').innerHTML='<div class="ok"><b>Đã gửi báo cáo.</b> '+d.gio+' giờ, '+d.anh+' ảnh. Trạng thái: Chờ HCNS duyệt. Mã: '+d.ma+'</div>';f.reset();$('ngay').value=fd(new Date());$('th').innerHTML='';imgs=[];$('ddk').style.display='none'}
+  else $('kq').innerHTML='<div class="er">'+(d.msg||'Gửi lỗi, thử lại.')+'</div>'}).catch(function(){$('gui').disabled=false;$('kq').innerHTML='<div class="er">Mất kết nối, chưa gửi được. Thử lại.</div>'})};
+var TK=sessionStorage.getItem('ngg_tk')||'';
+function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]})}
+function tai(){post({ngg:'ds',token:TK}).then(function(d){if(!d.ok){TK='';sessionStorage.removeItem('ngg_tk');$('lg').className='';$('ds').className='hid';return}
+ $('lg').className='hid';$('ds').className='';$('who').textContent='Đăng nhập: '+d.ten;window.DS=d.ds;ve()})}
+function ve(){var l=$('loc').value,a=(window.DS||[]).filter(function(x){return !l||x.tt==l});
+ $('list').innerHTML=a.length?a.map(function(x){var c=x.tt=='Đã duyệt'?'s1':x.tt=='Không duyệt'?'s2':'s0';
+  return '<div class="it"><b>'+esc(x.ten)+' <span class="st '+c+'">'+esc(x.tt)+'</span></b><small>'+esc(x.ngay)+' | '+esc(x.bd)+'-'+esc(x.kt)+' | '+esc(x.gio)+' giờ | '+esc(x.nhom)+' | '+esc(x.dd)+'</small><div>'+esc(x.nd)+'</div>'+x.anh.map(function(u,i){return '<a target="_blank" rel="noopener" href="'+esc(u)+'">Ảnh '+(i+1)+'</a> '}).join('')+(x.nguoi?'<br><small>Duyệt: '+esc(x.nguoi)+'</small>':'')+(x.gc?'<br><small>Ghi chú: '+esc(x.gc)+'</small>':'')+'<input placeholder="Ghi chú (không bắt buộc)" id="g'+x.row+'" style="margin-top:8px"><div class="bt"><button class="y" data-r="'+x.row+'" data-t="Đã duyệt">Duyệt</button><button class="n" data-r="'+x.row+'" data-t="Không duyệt">Không duyệt</button><button class="c" data-r="'+x.row+'" data-t="Chờ duyệt">Về chờ</button></div></div>'}).join(''):'<div class="note" style="margin-top:10px">Không có báo cáo.</div>'};
+$('loc').onchange=ve;
+$('list').onclick=function(e){var b=e.target;if(!b.dataset||!b.dataset.r)return;var r=+b.dataset.r,x=window.DS.filter(function(y){return y.row==r})[0];b.disabled=true;
+ post({ngg:'duyet',token:TK,row:r,ma:x.ma,tt:b.dataset.t,gc:$('g'+r).value}).then(function(d){if(d.ok){x.tt=d.tt;x.nguoi=d.nguoi;var g=$('g'+r).value;if(g)x.gc=(x.gc?x.gc+' | ':'')+g;ve()}else{b.disabled=false;alert(d.msg||'Phiên hết hạn, đăng nhập lại.');if(d.het)tai()}})};
+$('dn').onclick=function(){$('dn').disabled=true;post({ngg:'login',u:$('u').value,pin:$('pin').value}).then(function(d){$('dn').disabled=false;if(d.ok){TK=d.token;sessionStorage.setItem('ngg_tk',TK);$('pin').value='';tai()}else $('lk').innerHTML='<div class="er">'+esc(d.msg||'Không đăng nhập được.')+'</div>'}).catch(function(){$('dn').disabled=false;$('lk').innerHTML='<div class="er">Mất kết nối.</div>'})};
+if(TK){$('t2').onclick();tai()}
+</script></body></html>
