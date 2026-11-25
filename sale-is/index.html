@@ -1636,7 +1636,7 @@ var Core = (function () {
 
   // 17/11/2026 Minh Phuong (nhom SALE ITALY SPORT) + chi Hoa chot: hoc phi CLC Quan Bau (bang gia anh, ap dung tu 01/04/2025).
   // Khoa "KH <n> THANG TUAN <b>B" -> khoa theo (so thang | buoi/tuan). Chi ITALY SPORT (4YOU khong co CLC Quan Bau).
-  C.CLC_QB_GIA = { '3|2': 2160000, '3|3': 3060000, '6|2': 4800000, '6|3': 6840000, '9|2': 6120000, '9|3': 8640000, '12|2': 7680000, '12|3': 10800000 };
+  C.CLC_QB_GIA = { '3|2': 2160000, '3|3': 3060000, '6|2': 4176000, '6|3': 5904000, '9|2': 6120000, '9|3': 8640000, '12|2': 7680000, '12|3': 10800000 };
   C.laCLCQuanBau = function (coSo) { var s = noDau(coSo); return /\bclc\b/.test(s) && /quan bau/.test(s); };
   C.giaTheoCoSo = function (brand, coSo, khoa) {
     if (brand !== 'IS' || !C.laCLCQuanBau(coSo)) return 0;
@@ -2105,8 +2105,8 @@ var Core = (function () {
     var rows = tabs[hit.tab], hi = -1;
     for (var i = 0; i < Math.min(6, rows.length); i++) if ((rows[i] || []).some(function (x) { var k = NC(x); return k === NC('TÊN HỌC SINH') || k === NC('TÊN HỌC VIÊN'); })) { hi = i; break; }
     var h = {}; (rows[hi] || []).forEach(function (x, i) { var k = NC(x); if (k && h[k] == null) h[k] = i; });
-    var c = cot1(h, C.BL_COT_226);
-    return { ok: true, tab: hit.tab, row: hit.row, col: c, cur: c >= 0 ? T((rows[hit.row - 1] || [])[c]) : '', tt: hit.x.tt, nhieu: soNhieu > 1 };
+    var c = cot1(h, C.BL_COT_226), ct = cot1(h, ['TÌNH TRẠNG KH', 'TÌNH TRẠNG KHÓA HỌC', 'TÌNH TRẠNG KHOÁ HỌC', 'TÌNH TRẠNG']);
+    return { ok: true, tab: hit.tab, row: hit.row, col: c, cur: c >= 0 ? T((rows[hit.row - 1] || [])[c]) : '', ttCol: ct, ttCur: ct >= 0 ? T((rows[hit.row - 1] || [])[ct]) : '', tt: hit.x.tt, nhieu: soNhieu > 1 };
   };
   // dong 3.26 CUOI cua be (theo ten + SDT) -> {row (1-based), col (1-based), cur}
   C.blViTri326 = function (brand, reten, p) {
@@ -2124,7 +2124,7 @@ var Core = (function () {
   };
   // ke hoach ghi khi HCNS xac nhan. opt: {trangThai: [...ds tinh trang 3.26]}
   C.planBaoLuuXacNhan = function (brand, p, tabs, reten, opt) {
-    var notes = [], e226 = null, e326 = null, ngay = T(p.ngay);
+    var notes = [], e226 = null, e226tt = null, e326 = null, ngay = T(p.ngay);
     if (!C.parseDate(ngay)) return { ok: false, errors: ['Ngày bắt đầu bảo lưu trên phiếu không đúng dạng ngày/tháng/năm.'] };
     var v2 = C.blViTri226(tabs, p);
     if (!v2.ok) notes.push('2.26: ' + v2.why);
@@ -2133,6 +2133,13 @@ var Core = (function () {
     else if (v2.cur && v2.cur !== ngay) notes.push('2.26: ô ngày bảo lưu dòng ' + v2.row + ' đã có "' + v2.cur + '", không ghi đè.');
     else if (v2.cur === ngay) notes.push('2.26: ô ngày bảo lưu đã đúng ' + ngay + '.');
     else e226 = { tab: v2.tab, row: v2.row, col: v2.col + 1, value: ngay };
+    // 25/11/2026 (HCNS Nga, muc 11): truoc day chi ghi NGAY bao luu, khong doi TINH TRANG KH o 2.26 nen be van 'Dang hoc'. Doi sang 'Bảo lưu' khi ô đang trống/Đang học, khong ghi de Nghi luon...
+    if (v2.ok && !v2.nhieu) {
+      if (v2.ttCol < 0) notes.push('2.26: tab "' + v2.tab + '" không có cột tình trạng, chưa đổi tình trạng.');
+      else if (N(v2.ttCur) === N('Bảo lưu')) notes.push('2.26: tình trạng đã là Bảo lưu.');
+      else if (v2.ttCur && N(v2.ttCur) !== N('Đang học')) notes.push('2.26: tình trạng dòng ' + v2.row + ' đang là "' + v2.ttCur + '", không ghi đè.');
+      else e226tt = { tab: v2.tab, row: v2.row, col: v2.ttCol + 1, value: 'Bảo lưu' };
+    }
     var v3 = C.blViTri326(brand, reten, p);
     if (!v3.ok) notes.push('3.26: ' + v3.why);
     else {
@@ -2142,7 +2149,7 @@ var Core = (function () {
       else if (v3.cur && N(v3.cur) !== N('Đang học')) notes.push('3.26: dòng ' + v3.row + ' đang là "' + v3.cur + '", không ghi đè.');
       else e326 = { row: v3.row, col: v3.col, value: val };
     }
-    return { ok: true, e226: e226, e326: e326, notes: notes, ket: (e226 || e326 ? 'Đã ghi' + (e226 ? ' 2.26 dòng ' + e226.row : '') + (e226 && e326 ? ',' : '') + (e326 ? ' 3.26 dòng ' + e326.row : '') + '.' : 'Không ghi gì.') + (notes.length ? ' ' + notes.join(' ') : '') };
+    var w226 = e226 || e226tt; return { ok: true, e226: e226, e226tt: e226tt, e326: e326, notes: notes, ket: (w226 || e326 ? 'Đã ghi' + (w226 ? ' 2.26 dòng ' + w226.row + (e226tt ? ' (tình trạng Bảo lưu)' : '') : '') + (w226 && e326 ? ',' : '') + (e326 ? ' 3.26 dòng ' + e326.row : '') + '.' : 'Không ghi gì.') + (notes.length ? ' ' + notes.join(' ') : '') };
   };
 
   // ---------- PHIEU HOAN HOC PHI (12/11/2026 chi Hoa chot, BAN NHAP chua duyet) ----------
