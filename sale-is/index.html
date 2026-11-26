@@ -167,6 +167,12 @@ var Core = (function () {
       var b = C.receiptBaseOption(brand, cs, opt.coSoDs);
       if (b == null) e.push('Phiếu thu: cơ sở "' + cs + '" không có trong danh sách cơ sở. Chọn lại cơ sở trong danh sách.'); else out.coSo = b;
     }
+    // 26/11/2026: ghi vao DS DK thi gia tri phai nam trong danh sach chon cua chinh o do (khong ghi chu tu do)
+    if (cs && !e.length && opt.coSoDk && opt.coSoDk.length) {
+      var b2 = C.receiptBaseOption(brand, out.coSo || cs, opt.coSoDk);
+      if (b2 == null) e.push('Phiếu thu: cơ sở "' + (out.coSo || cs) + '" chưa có trong danh sách cơ sở của file đăng kí (DS ĐK). Chọn lại ô Cơ sở ở dòng khách; nếu cơ sở này thật sự cần thêm vào danh sách thì báo chị Hoa.');
+      else out.coSo = b2;
+    }
     return { errors: e, src: out };
   };
 
@@ -1574,7 +1580,7 @@ var Core = (function () {
     if (!T(f.hinhThucTien)) e.push('Chọn hình thức nhận tiền.');
     e = e.concat(C.kiemPhieuThu(brand, f));
     // 26/11/2026: cung kiem dau vao nhu phieu hoc phi (ten, 1 SDT chinh, co so thuoc danh sach)
-    var dv = C.kiemDauVao(brand, { ten: f.ten, sdt: f.sdt, coSo: f.coSo }, { coSoDs: opt && opt.coSoDs, sdtChinh: f.sdtChinh, boCoSo: !opt });
+    var dv = C.kiemDauVao(brand, { ten: f.ten, sdt: f.sdt, coSo: f.coSo }, { coSoDs: opt && opt.coSoDs, coSoDk: opt && opt.coSoDk, sdtChinh: f.sdtChinh, boCoSo: !opt });
     dv.errors.forEach(function (m) { if (e.indexOf(m) < 0 && !(/thiếu tên bé/.test(m) && e.length && /Cần tên học sinh/.test(e[0])) && !(/khách chưa có SĐT|không đọc được thành số/.test(m) && e.indexOf('Cần số điện thoại đúng.') >= 0)) e.push(m); });
     if (e.length) return { ok: false, errors: e };
     var tong = C.doMua(brand, f).reduce(function (a, x) { return a + x.tien; }, 0);
@@ -1819,9 +1825,14 @@ var Core = (function () {
   };
 
   // Strict receipt correction: plan every cell before any writes, never trust browser flags.
+  // 26/11/2026 (t_8cbccebb47f5): map ten co so cu/viet tat ve ten chuan cua danh sach chon. Chua co ten chuan (vd Kem rieng THSP) thi KHONG doan.
+  C.BASE_ALIAS = {
+    IS: { 'HỒNG SƠN': 'THCS Hồng Sơn' },
+    '4Y': { 'BĐ NGHI PHÚ 2': 'BĐ Nghi Phú II', 'BĐ THSP NGHỆ AN': 'THSP Nghệ An', 'BĐ ĐẠI HỌC VINH': 'CS ĐH Vinh', 'BĐ ĐH VINH': 'CS ĐH Vinh', 'CS ĐẠI HỌC VINH': 'CS ĐH Vinh' }
+  };
   C.receiptBaseKey = function(brand, value) {
-    var key=N(value);
-    return brand==='4Y' && key===N('BĐ NGHI PHÚ 2') ? N('BĐ Nghi Phú II') : key;
+    var key=N(value), a=(C.BASE_ALIAS[brand]||{});
+    return Object.prototype.hasOwnProperty.call(a,key) ? N(a[key]) : key;
   };
   C.receiptBaseOption = function(brand, value, options) {
     var exact=(options||[]).filter(function(v){return N(v)===N(value);});
